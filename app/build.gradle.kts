@@ -24,6 +24,41 @@ android {
         buildConfigField("String", "TOMTOM_KEY", "\"${localProps.getProperty("TOMTOM_KEY", "")}\"")
     }
 
+    // Release signing key lives outside the repo; its location and password are in
+    // local.properties (RELEASE_STORE_FILE etc.). Without them, release builds are unsigned.
+    val releaseStore = localProps.getProperty("RELEASE_STORE_FILE")?.let { file(it) }?.takeIf { it.exists() }
+    signingConfigs {
+        if (releaseStore != null) {
+            create("release") {
+                storeFile = releaseStore
+                storePassword = localProps.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = localProps.getProperty("RELEASE_KEY_ALIAS")
+                keyPassword = localProps.getProperty("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // Strip unused code and resources, and optimize: smaller, faster, not debuggable.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release")
+        }
+    }
+
+    // The map engine is native code, ~12 MB per processor type. Build one APK per type instead
+    // of one carrying all of them: arm64 for phones, 32-bit ARM for old phones, x86_64 for emulators.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = false
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -34,6 +69,22 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+}
+
+// Name the APKs after the app and version. The arm64 release (what phones use) is plain
+// HalfNav-1.2.apk; others say what they're for, e.g. HalfNav-1.2-x86_64.apk, HalfNav-1.2-debug.apk.
+@Suppress("DEPRECATION")
+android.applicationVariants.all {
+    val variant = this
+    outputs.all {
+        val out = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+        val abi = out.getFilter(com.android.build.OutputFile.ABI)
+        val parts = listOfNotNull(
+            variant.buildType.name.takeIf { it != "release" },
+            abi?.takeIf { it != "arm64-v8a" },
+        )
+        out.outputFileName = "HalfNav-${variant.versionName}" + parts.joinToString("") { "-$it" } + ".apk"
+    }
 }
 
 dependencies {

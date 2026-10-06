@@ -70,10 +70,26 @@ By default HalfNav switches to a dark map and dark panels at official sunset whe
 3. Plug the phone into the Mac and tap **Allow** on the "Allow USB debugging?" prompt.
 4. In Android Studio, pick your phone in the device dropdown at the top and click **Run ▶**. The app installs and stays on your phone as **HalfNav**.
 
-To install without a cable:
-- In Android Studio, choose **Build → Build App Bundle(s) / APK(s) → Build APK(s)**.
-- Copy `app/build/outputs/apk/debug/app-debug.apk` to the phone (Google Drive, email, etc.).
-- Tap the file on the phone and allow "Install unknown apps" when asked.
+That installs a debug build, which is handy while developing.
+
+### Release build (smaller, optimized, installable without a cable)
+
+1. **Create a signing key once** and keep it safe. Android only installs an update if it's signed with the same key as the version already on the phone. Keep the key file outside this folder and back it up:
+   ```
+   keytool -genkeypair -keystore ~/.halfnav/halfnav-release.jks -storetype PKCS12 \
+     -alias halfnav -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=HalfNav"
+   ```
+2. **Tell the build where it is** by adding to `local.properties` (never committed):
+   ```
+   RELEASE_STORE_FILE=/full/path/to/halfnav-release.jks
+   RELEASE_STORE_PASSWORD=...
+   RELEASE_KEY_ALIAS=halfnav
+   RELEASE_KEY_PASSWORD=...
+   ```
+3. **Build:** `./gradlew assembleRelease`, or in Android Studio **Build → Generate App Bundles or APKs → Generate APKs** with the release build variant.
+4. **Install:** in `app/build/outputs/apk/release/`, copy `HalfNav-<version>.apk` to the phone (Google Drive, email, etc.), tap it, and allow "Install unknown apps" when asked. That's the one for nearly all phones (arm64). The folder also has `-armeabi-v7a` for older 32-bit phones and `-x86_64` for emulators.
+
+Switching between a debug and a release build means uninstalling first, because they're signed with different keys.
 
 ## First run
 
