@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status bar icon: dashes ahead (on your own), the arrow, and a solid line behind (guided).
+     Android draws it as a white silhouette. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M10.5,0.5h3v2.5h-3z M10.5,4.5h3v2.5h-3z M12,8L19,21L12,17.2L5,21Z M10,19L12,17.9L14,19L14.3,23.5h-4.6z" />
+</vector>

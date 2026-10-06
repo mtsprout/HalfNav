@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Top-down car, front pointing up (the map rotates it to your heading). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- soft shadow -->
+    <path android:fillColor="#33000000"
+        android:pathData="M17.5,6.5h14a6,6 0,0 1,6 6v25a6,6 0,0 1,-6 6h-14a6,6 0,0 1,-6 -6v-25a6,6 0,0 1,6 -6z" />
+    <!-- body -->
+    <path android:fillColor="#1A73E8" android:strokeColor="#FFFFFF" android:strokeWidth="2"
+        android:pathData="M17,4h14a6,6 0,0 1,6 6v26a6,6 0,0 1,-6 6h-14a6,6 0,0 1,-6 -6v-26a6,6 0,0 1,6 -6z" />
+    <!-- roof -->
+    <path android:fillColor="#4D94F0"
+        android:pathData="M18.5,19h11a1.5,1.5 0,0 1,1.5 1.5v10a1.5,1.5 0,0 1,-1.5 1.5h-11a1.5,1.5 0,0 1,-1.5 -1.5v-10a1.5,1.5 0,0 1,1.5 -1.5z" />
+    <!-- windshield -->
+    <path android:fillColor="#D2E3FC" android:pathData="M16,12.5h16l-2.2,5.5h-11.6z" />
+    <!-- rear window -->
+    <path android:fillColor="#D2E3FC" android:pathData="M18,33.5h12l1.6,3.5h-15.2z" />
+    <!-- headlights -->
+    <path android:fillColor="#FFF59D" android:pathData="M14.5,6.5h3.5v2.5h-4.5z M30,6.5h3.5l1,2.5h-4.5z" />
+</vector>

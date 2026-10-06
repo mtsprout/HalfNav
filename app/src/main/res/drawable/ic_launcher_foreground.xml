@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App icon foreground: the road ahead. Solid glowing route near you (guided), dashes toward
+     the horizon (on your own), and the navigation arrow where one becomes the other. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Shifted down so more of the sunrise shows inside the launcher crop. -->
+    <group android:translateY="8">
+        <!-- road -->
+        <path android:pathData="M51,34 L57,34 L92,108 L16,108 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="linear" android:startX="0" android:startY="34" android:endX="0" android:endY="108">
+                    <item android:offset="0" android:color="#FF232B45" />
+                    <item android:offset="1" android:color="#FF121A30" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <!-- road edges -->
+        <path android:fillColor="#FFFFFF" android:fillAlpha="0.6" android:pathData="M51,34 L51.8,34 L21,108 L16,108 Z" />
+        <path android:fillColor="#FFFFFF" android:fillAlpha="0.6" android:pathData="M56.2,34 L57,34 L92,108 L87,108 Z" />
+        <!-- on your own: dashes fading toward the horizon -->
+        <path android:fillColor="#FFD27A" android:fillAlpha="0.6" android:pathData="M53.6,36.5 L54.4,36.5 L54.6,39.5 L53.4,39.5 Z" />
+        <path android:fillColor="#FFD27A" android:fillAlpha="0.85" android:pathData="M53.2,42.5 L54.8,42.5 L55.1,47.5 L52.9,47.5 Z" />
+        <!-- guided: glowing route -->
+        <path android:fillColor="#22A8FF" android:fillAlpha="0.3" android:pathData="M50.5,62 L57.5,62 L63,108 L45,108 Z" />
+        <path android:pathData="M52,60 L56,60 L59.5,108 L48.5,108 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="linear" android:startX="0" android:startY="60" android:endX="0" android:endY="108">
+                    <item android:offset="0" android:color="#FF9BF0FF" />
+                    <item android:offset="1" android:color="#FF22A8FF" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <!-- navigation arrow, with a soft shadow -->
+        <group android:translateY="2">
+            <path android:fillColor="#000000" android:fillAlpha="0.3" android:pathData="M54,49 L66,77 L54,70.5 L42,77 Z" />
+        </group>
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeColor="#0B4FB3"
+            android:strokeWidth="1.6"
+            android:strokeLineJoin="round"
+            android:pathData="M54,49 L66,77 L54,70.5 L42,77 Z" />
+    </group>
+</vector>

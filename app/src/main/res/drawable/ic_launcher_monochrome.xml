@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One-color version for Android 13+ themed icons: road edges, dashes, route and arrow. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Shifted down so more of the sunrise shows inside the launcher crop. -->
+    <group android:translateY="8">
+        <path android:fillColor="#FFFFFF" android:pathData="M51,34 L52.4,34 L23,90 L19.5,90 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M55.6,34 L57,34 L88.5,90 L85,90 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M53.4,36.5 L54.6,36.5 L54.8,40 L53.2,40 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M53,42.5 L55,42.5 L55.3,47.5 L52.7,47.5 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M51.6,71 L56.4,71 L58,90 L50,90 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M54,49 L66,77 L54,70.5 L42,77 Z" />
+    </group>
+</vector>

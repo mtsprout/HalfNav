@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Classic navigation arrow, pointing up (the map rotates it to your heading). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#FFFFFF" android:pathData="M24,0a24,24 0,1 0,0.01 0z" />
+    <path android:fillColor="#1A73E8" android:strokeColor="#FFFFFF" android:strokeWidth="1.5"
+        android:strokeLineJoin="round" android:pathData="M24,7L37,39L24,32L11,39Z" />
+</vector>
