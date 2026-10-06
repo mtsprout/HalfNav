@@ -55,8 +55,9 @@ import kotlin.math.cos
 import kotlin.math.sin
 import org.maplibre.android.geometry.LatLng as MapLatLng
 
-/** Free OpenStreetMap-based street map; no key needed. */
-private const val STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
+/** Free OpenStreetMap-based street maps; no key needed. */
+private const val STYLE_LIGHT = "https://tiles.openfreemap.org/styles/liberty"
+private const val STYLE_DARK = "https://tiles.openfreemap.org/styles/dark"
 
 private const val BLUE = 0xFF1A73E8.toInt()
 private const val BLUE_DARK = 0xFF0B4FB3.toInt()
@@ -96,6 +97,7 @@ fun TripMap(
     here: LatLng?,
     locationPermitted: Boolean,
     vehicle: Vehicle,
+    dark: Boolean,
     recenterRequests: Int,
     onFollowingChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -139,10 +141,18 @@ fun TripMap(
                 .target(MapLatLng(39.5, -98.35)) // continental US until we know where you are
                 .zoom(3.5)
                 .build()
-            m.setStyle(Style.Builder().fromUri(STYLE_URL)) { s ->
-                addTripLayers(s)
-                style = s
-            }
+        }
+    }
+
+    // Light or dark street map. Switching styles drops our layers, so add them again; the trip
+    // and camera effects below re-run when [style] changes.
+    LaunchedEffect(map, dark) {
+        val m = map ?: return@LaunchedEffect
+        // The old style is unusable once a new one starts loading; nothing may touch it meanwhile.
+        style = null
+        m.setStyle(Style.Builder().fromUri(if (dark) STYLE_DARK else STYLE_LIGHT)) { s ->
+            addTripLayers(s, dark)
+            style = s
         }
     }
 
@@ -158,7 +168,7 @@ fun TripMap(
     }
 
     LaunchedEffect(style, locationPermitted) {
-        val s = style ?: return@LaunchedEffect
+        val s = style?.takeIf { it.isFullyLoaded } ?: return@LaunchedEffect
         val m = map ?: return@LaunchedEffect
         if (!locationPermitted || locationReady) return@LaunchedEffect
         activateLocation(context, m, s, vehicle)
@@ -233,7 +243,7 @@ fun TripMap(
 
     // Draw the trip.
     LaunchedEffect(style, content) {
-        val s = style ?: return@LaunchedEffect
+        val s = style?.takeIf { it.isFullyLoaded } ?: return@LaunchedEffect
         updateTripLayers(s, content)
     }
 
@@ -302,7 +312,7 @@ private fun widthByZoom(atLow: Float, atHigh: Float): Expression =
         Expression.stop(5, atLow), Expression.stop(18, atHigh),
     )
 
-private fun addTripLayers(s: Style) {
+private fun addTripLayers(s: Style, dark: Boolean) {
     listOf(Ids.GUIDED, Ids.UNGUIDED, Ids.WORK, Ids.RADIUS, Ids.POINTS).forEach { s.addSource(GeoJsonSource(it)) }
 
     s.addLayer(
@@ -390,8 +400,8 @@ private fun addTripLayers(s: Style) {
             PropertyFactory.textSize(13f),
             PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
             PropertyFactory.textOffset(arrayOf(0f, 1.1f)),
-            PropertyFactory.textColor(0xFF202124.toInt()),
-            PropertyFactory.textHaloColor(0xFFFFFFFF.toInt()),
+            PropertyFactory.textColor(if (dark) 0xFFE8EAED.toInt() else 0xFF202124.toInt()),
+            PropertyFactory.textHaloColor(if (dark) 0xFF202124.toInt() else 0xFFFFFFFF.toInt()),
             PropertyFactory.textHaloWidth(2f),
             PropertyFactory.textOptional(true),
         )

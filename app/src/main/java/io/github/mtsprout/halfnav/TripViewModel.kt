@@ -64,6 +64,9 @@ class TripViewModel(app: Application) : AndroidViewModel(app) {
     /** Call once location permission is granted. */
     fun refreshLocation() {
         viewModelScope.launch {
+            // The last known position is instant, so the map and day/night look are right at
+            // once; a fresh fix follows.
+            if (_here.value == null) Locations.lastKnown(context)?.let { _here.value = it }
             runCatching { Locations.current(context) }.getOrNull()?.let { _here.value = it }
         }
     }
@@ -250,6 +253,7 @@ class TripViewModel(app: Application) : AndroidViewModel(app) {
     fun setWarnConstruction(v: Boolean) = viewModelScope.launch { prefs.setWarnConstruction(v) }
     fun setVehicle(v: Vehicle) = viewModelScope.launch { prefs.setVehicle(v) }
     fun setVoice(v: VoiceMode) = viewModelScope.launch { prefs.setVoice(v) }
+    fun setTheme(v: ThemeMode) = viewModelScope.launch { prefs.setTheme(v) }
 
     private companion object {
         const val SEARCH_DEBOUNCE_MS = 300L

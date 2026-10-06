@@ -47,6 +47,10 @@ HalfNav speaks turn-by-turn directions itself on the guided part of the trip ("I
 
 Before a start-mode trip, HalfNav also checks the **whole route** for reported road work and closures. If any fall on the part you'd drive without guidance, it warns you and offers **Let Google route the whole trip**. You can turn this off in Settings (the gear icon in the search bar).
 
+## Dark mode
+
+By default HalfNav switches to a dark map and dark panels at official sunset where you are, and back at sunrise. It works out the times from your location, so it stays right on a road trip across time zones. In Settings, **Dark mode** can instead follow your phone's setting, or stay always on or always off.
+
 ## One-time setup
 
 1. **Get a free TomTom API key** (used for search, routes and construction data):

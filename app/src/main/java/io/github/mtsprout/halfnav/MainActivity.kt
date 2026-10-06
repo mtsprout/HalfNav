@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -100,8 +102,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MaterialTheme {
-                App(vm)
+            val settings by vm.settings.collectAsStateWithLifecycle()
+            val here by vm.here.collectAsStateWithLifecycle()
+            val dark = rememberDarkMode(settings.theme, here)
+            HalfNavTheme(dark) {
+                App(vm, dark)
             }
         }
     }
@@ -114,7 +119,7 @@ private fun hasPermission(context: Context, permission: String) =
     ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
 @Composable
-private fun App(vm: TripViewModel) {
+private fun App(vm: TripViewModel, dark: Boolean) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val focusManager = LocalFocusManager.current
@@ -210,6 +215,7 @@ private fun App(vm: TripViewModel) {
             here = here,
             locationPermitted = locationPermitted,
             vehicle = settings.vehicle,
+            dark = dark,
             recenterRequests = recenter,
             onFollowingChange = { following = it },
             modifier = Modifier.fillMaxSize(),
@@ -620,6 +626,7 @@ private fun WatchBanner(w: Watch, onCancel: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SettingsDialog(settings: Settings, vm: TripViewModel, onDismiss: () -> Unit) {
     AlertDialog(
@@ -627,10 +634,47 @@ private fun SettingsDialog(settings: Settings, vm: TripViewModel, onDismiss: () 
         confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } },
         title = { Text("Settings") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Check the whole route for construction before start-mode trips", Modifier.weight(1f))
                     Switch(checked = settings.warnConstruction, onCheckedChange = vm::setWarnConstruction)
+                }
+                Column {
+                    Text("Dark mode")
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = settings.theme == ThemeMode.SUN,
+                            onClick = { vm.setTheme(ThemeMode.SUN) },
+                            label = { Text("At sunset") },
+                        )
+                        FilterChip(
+                            selected = settings.theme == ThemeMode.SYSTEM,
+                            onClick = { vm.setTheme(ThemeMode.SYSTEM) },
+                            label = { Text("Phone") },
+                        )
+                        FilterChip(
+                            selected = settings.theme == ThemeMode.LIGHT,
+                            onClick = { vm.setTheme(ThemeMode.LIGHT) },
+                            label = { Text("Off") },
+                        )
+                        FilterChip(
+                            selected = settings.theme == ThemeMode.DARK,
+                            onClick = { vm.setTheme(ThemeMode.DARK) },
+                            label = { Text("On") },
+                        )
+                    }
+                    Text(
+                        when (settings.theme) {
+                            ThemeMode.SUN -> "Dark from official sunset to sunrise where you are."
+                            ThemeMode.SYSTEM -> "Follows your phone's dark-mode setting."
+                            ThemeMode.LIGHT -> "Always light."
+                            ThemeMode.DARK -> "Always dark."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
                 Column {
                     Text("Turn-by-turn voice on the guided part")

@@ -49,7 +49,7 @@ fun RouteReviewDetails(plan: TripPlan) {
         )
         Text(
             if (handoff.reachesDestination)
-                "The highway runs nearly to your destination, so Maps will guide you the whole way."
+                "The highway runs nearly to your destination, so you'll be guided the whole way."
             else
                 "Guided to ${handoff.label} (${formatMiles(guidedMiles)}), then on your own for ${formatMiles(totalMiles - guidedMiles)}.",
             fontWeight = FontWeight.SemiBold,
@@ -57,7 +57,7 @@ fun RouteReviewDetails(plan: TripPlan) {
         Legend(showUnguided = !handoff.reachesDestination, showWork = plan.warnings.isNotEmpty())
 
         if (plan.warnings.isEmpty()) {
-            Card(colors = CardDefaults.cardColors(containerColor = Green), modifier = Modifier.fillMaxWidth()) {
+            Card(colors = CardDefaults.cardColors(containerColor = Green, contentColor = Color.Black), modifier = Modifier.fillMaxWidth()) {
                 Text("✓ No reported construction on this route.", Modifier.padding(16.dp))
             }
         }
@@ -139,7 +139,7 @@ private fun LegendItem(color: Color, label: String) {
 @Composable
 private fun WarningGroup(title: String, note: String, warnings: List<ConstructionWarning>, highlight: Boolean) {
     Card(
-        colors = if (highlight) CardDefaults.cardColors(containerColor = Amber) else CardDefaults.cardColors(),
+        colors = if (highlight) CardDefaults.cardColors(containerColor = Amber, contentColor = Color.Black) else CardDefaults.cardColors(),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

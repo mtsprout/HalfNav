@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +45,13 @@ import java.util.Date
 import kotlin.math.roundToInt
 
 private val GuidedGreen = Color(0xFF0F7B4A)
+/** Lighter green for text on the dark theme's dark surfaces. */
+private val GuidedGreenOnDark = Color(0xFF6DD58C)
+
+/** Green for text on the current surface: dark green on light, light green on dark. */
+@Composable
+private fun guidedTextColor(): Color =
+    if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) GuidedGreenOnDark else GuidedGreen
 private val OwnSlate = Color(0xFF3C4043)
 private val WarnOrange = Color(0xFFF29900)
 
@@ -213,10 +221,10 @@ private fun TripBar(
                 IconButton(onClick = onOverview) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Overview map") }
                 Column(Modifier.weight(1f)) {
                     if (progress.arrived) {
-                        Text("Arrived", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = GuidedGreen)
+                        Text("Arrived", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = guidedTextColor())
                     } else {
                         Row(verticalAlignment = Alignment.Bottom) {
-                            Text(formatMinutes(remainingSec), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = GuidedGreen)
+                            Text(formatMinutes(remainingSec), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = guidedTextColor())
                             Spacer(Modifier.width(8.dp))
                             Text("· ${formatMiles(Geo.metersToMiles(progress.remainingMeters(trip)))}", fontSize = 16.sp)
                         }
@@ -233,7 +241,7 @@ private fun TripBar(
                 OutlinedButton(onClick = onGoogle, modifier = Modifier.weight(1f)) { Text("Google from here", maxLines = 1) }
                 Button(
                     onClick = onEnd,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD93025)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD93025), contentColor = Color.White),
                 ) { Text("End") }
             }
         }

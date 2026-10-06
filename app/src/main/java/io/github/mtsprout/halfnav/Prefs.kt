@@ -28,6 +28,16 @@ enum class VoiceMode {
     GOOGLE,
 }
 
+/** When to use the dark look (map and panels). */
+enum class ThemeMode {
+    /** Dark from official sunset to sunrise where you are. */
+    SUN,
+    /** Follow the phone's own dark-mode setting. */
+    SYSTEM,
+    LIGHT,
+    DARK,
+}
+
 data class Settings(
     val mode: Mode = Mode.START_INTERSTATE,
     val startMiles: Float = 5f,
@@ -36,6 +46,7 @@ data class Settings(
     val vehicle: Vehicle = Vehicle.CAR,
     val voice: VoiceMode = VoiceMode.HALFNAV,
     val voiceMuted: Boolean = false,
+    val theme: ThemeMode = ThemeMode.SUN,
     val recent: List<Place> = emptyList(),
 )
 
@@ -49,6 +60,7 @@ class Prefs(private val context: Context) {
         val vehicle = stringPreferencesKey("vehicle")
         val voice = stringPreferencesKey("voice")
         val voiceMuted = booleanPreferencesKey("voice_muted")
+        val theme = stringPreferencesKey("theme")
     }
 
     val settings: Flow<Settings> = context.dataStore.data.map { p ->
@@ -60,6 +72,7 @@ class Prefs(private val context: Context) {
             vehicle = p[Keys.vehicle]?.let { runCatching { Vehicle.valueOf(it) }.getOrNull() } ?: Vehicle.CAR,
             voice = p[Keys.voice]?.let { runCatching { VoiceMode.valueOf(it) }.getOrNull() } ?: VoiceMode.HALFNAV,
             voiceMuted = p[Keys.voiceMuted] ?: false,
+            theme = p[Keys.theme]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.SUN,
             recent = decode(p[Keys.recent]),
         )
     }
@@ -71,6 +84,7 @@ class Prefs(private val context: Context) {
     suspend fun setVehicle(v: Vehicle) = context.dataStore.edit { it[Keys.vehicle] = v.name }
     suspend fun setVoice(v: VoiceMode) = context.dataStore.edit { it[Keys.voice] = v.name }
     suspend fun setVoiceMuted(v: Boolean) = context.dataStore.edit { it[Keys.voiceMuted] = v }
+    suspend fun setTheme(v: ThemeMode) = context.dataStore.edit { it[Keys.theme] = v.name }
 
     suspend fun addRecent(place: Place) = context.dataStore.edit { p ->
         val others = decode(p[Keys.recent]).filterNot { it.name == place.name && it.address == place.address }
