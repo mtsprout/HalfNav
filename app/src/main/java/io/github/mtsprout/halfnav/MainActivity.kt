@@ -20,8 +20,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -99,12 +97,15 @@ class MainActivity : ComponentActivity() {
     private val vm: TripViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Start in whatever look the app last had, so the window doesn't flash light at night.
+        val lastDark = ThemeCache.lastDark(this)
+        if (lastDark == true) setTheme(R.style.Theme_HalfNav_Dark)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             val settings by vm.settings.collectAsStateWithLifecycle()
             val here by vm.here.collectAsStateWithLifecycle()
-            val dark = rememberDarkMode(settings.theme, here)
+            val dark = rememberDarkMode(settings.theme, here, lastDark)
             HalfNavTheme(dark) {
                 App(vm, dark)
             }
@@ -626,7 +627,6 @@ private fun WatchBanner(w: Watch, onCancel: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SettingsDialog(settings: Settings, vm: TripViewModel, onDismiss: () -> Unit) {
     AlertDialog(
@@ -638,43 +638,37 @@ private fun SettingsDialog(settings: Settings, vm: TripViewModel, onDismiss: () 
                 Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Check the whole route for construction before start-mode trips", Modifier.weight(1f))
-                    Switch(checked = settings.warnConstruction, onCheckedChange = vm::setWarnConstruction)
-                }
                 Column {
-                    Text("Dark mode")
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Appearance")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
-                            selected = settings.theme == ThemeMode.SUN,
-                            onClick = { vm.setTheme(ThemeMode.SUN) },
-                            label = { Text("At sunset") },
-                        )
-                        FilterChip(
-                            selected = settings.theme == ThemeMode.SYSTEM,
-                            onClick = { vm.setTheme(ThemeMode.SYSTEM) },
-                            label = { Text("Phone") },
+                            selected = settings.theme == ThemeMode.AUTO,
+                            onClick = { vm.setTheme(ThemeMode.AUTO) },
+                            label = { Text("Auto") },
                         )
                         FilterChip(
                             selected = settings.theme == ThemeMode.LIGHT,
                             onClick = { vm.setTheme(ThemeMode.LIGHT) },
-                            label = { Text("Off") },
+                            label = { Text("Light") },
                         )
                         FilterChip(
                             selected = settings.theme == ThemeMode.DARK,
                             onClick = { vm.setTheme(ThemeMode.DARK) },
-                            label = { Text("On") },
+                            label = { Text("Dark") },
                         )
                     }
                     Text(
                         when (settings.theme) {
-                            ThemeMode.SUN -> "Dark from official sunset to sunrise where you are."
-                            ThemeMode.SYSTEM -> "Follows your phone's dark-mode setting."
+                            ThemeMode.AUTO -> "Dark from official sunset to sunrise where you are."
                             ThemeMode.LIGHT -> "Always light."
                             ThemeMode.DARK -> "Always dark."
                         },
                         style = MaterialTheme.typography.bodySmall,
                     )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Check the whole route for construction before start-mode trips", Modifier.weight(1f))
+                    Switch(checked = settings.warnConstruction, onCheckedChange = vm::setWarnConstruction)
                 }
                 Column {
                     Text("Turn-by-turn voice on the guided part")

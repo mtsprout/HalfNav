@@ -1,0 +1,7 @@
+<resources>
+    <!-- Match the map's own background so nothing flashes before it draws. -->
+    <color name="window_light">#F8F4F0</color>
+    <color name="window_dark">#0C0C0C</color>
+    <!-- Launch screen: the icon's night sky, which suits both day and night. -->
+    <color name="splash">#0D1B3D</color>
+</resources>

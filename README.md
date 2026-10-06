@@ -49,7 +49,7 @@ Before a start-mode trip, HalfNav also checks the **whole route** for reported r
 
 ## Dark mode
 
-By default HalfNav switches to a dark map and dark panels at official sunset where you are, and back at sunrise. It works out the times from your location, so it stays right on a road trip across time zones. In Settings, **Dark mode** can instead follow your phone's setting, or stay always on or always off.
+By default HalfNav switches to a dark map and dark panels at official sunset where you are, and back at sunrise. It works out the times from your location, so it stays right on a road trip across time zones. In Settings, **Appearance** offers **Auto** (sunset to sunrise), **Light** or **Dark**. The app opens in whichever look it last had, so there's no white flash when you open it at night.
 
 ## One-time setup
 

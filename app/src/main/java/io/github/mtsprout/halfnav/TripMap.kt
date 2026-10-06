@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -33,6 +34,7 @@ import org.maplibre.android.location.engine.LocationEngineDefault
 import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
@@ -106,7 +108,10 @@ fun TripMap(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val mapView = remember {
         MapLibre.getInstance(context)
-        MapView(context).apply { onCreate(null) }
+        // Placeholder color while the style loads: the map's own background, light or dark.
+        val options = MapLibreMapOptions.createFromAttributes(context)
+            .foregroundLoadColor(ContextCompat.getColor(context, if (dark) R.color.window_dark else R.color.window_light))
+        MapView(context, options).apply { onCreate(null) }
     }
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var style by remember { mutableStateOf<Style?>(null) }

@@ -31,9 +31,7 @@ enum class VoiceMode {
 /** When to use the dark look (map and panels). */
 enum class ThemeMode {
     /** Dark from official sunset to sunrise where you are. */
-    SUN,
-    /** Follow the phone's own dark-mode setting. */
-    SYSTEM,
+    AUTO,
     LIGHT,
     DARK,
 }
@@ -46,7 +44,7 @@ data class Settings(
     val vehicle: Vehicle = Vehicle.CAR,
     val voice: VoiceMode = VoiceMode.HALFNAV,
     val voiceMuted: Boolean = false,
-    val theme: ThemeMode = ThemeMode.SUN,
+    val theme: ThemeMode = ThemeMode.AUTO,
     val recent: List<Place> = emptyList(),
 )
 
@@ -72,7 +70,7 @@ class Prefs(private val context: Context) {
             vehicle = p[Keys.vehicle]?.let { runCatching { Vehicle.valueOf(it) }.getOrNull() } ?: Vehicle.CAR,
             voice = p[Keys.voice]?.let { runCatching { VoiceMode.valueOf(it) }.getOrNull() } ?: VoiceMode.HALFNAV,
             voiceMuted = p[Keys.voiceMuted] ?: false,
-            theme = p[Keys.theme]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.SUN,
+            theme = p[Keys.theme]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.AUTO,
             recent = decode(p[Keys.recent]),
         )
     }
