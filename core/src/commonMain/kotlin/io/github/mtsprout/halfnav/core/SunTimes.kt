@@ -50,9 +50,15 @@ object SunTimes {
         return SunDay(julianToInstant(transit - halfDay), julianToInstant(transit + halfDay))
     }
 
-    /** True between official sunset and the next sunrise, at [lat]/[lng], on the calendar of [zone]. */
+    /**
+     * True between official sunset and the next sunrise at [lat]/[lng]. "Today" is the location's own
+     * solar day (UTC shifted by longitude), not the phone's time zone, so it's right even when the two
+     * disagree (near a zone border, or a phone set to another zone). [zone] is kept for callers' sake.
+     */
+    @Suppress("UNUSED_PARAMETER")
     fun isDark(now: Instant, lat: Double, lng: Double, zone: TimeZone): Boolean {
-        val today = day(now.toLocalDateTime(zone).date, lat, lng)
+        val solarNow = Instant.fromEpochMilliseconds(now.toEpochMilliseconds() + (lng / 360.0 * 86_400_000).toLong())
+        val today = day(solarNow.toLocalDateTime(TimeZone.UTC).date, lat, lng)
         return when {
             today.alwaysDown -> true
             today.alwaysUp -> false

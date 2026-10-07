@@ -96,17 +96,42 @@ Switching between a debug and a release build means uninstalling first, because 
 - Allow **precise location** and **notifications** when asked.
 - If you use Google Maps as the voice: for end mode to open Google Maps on its own, open Settings (the gear icon), tap **Allow auto-open**, and turn on "Display over other apps." Without it, Android only lets HalfNav show a notification. You tap the notification to start navigating.
 
+## iPhone and iPad
+
+The `ios/` folder has the iPhone and iPad version: the same features, map and voice, built in SwiftUI on the shared core. On iPad, panels sit in a side column next to a full-size map.
+
+**Setup (once):**
+1. Install **Xcode** from the Mac App Store and a **JDK 17 or newer** (for example from <https://adoptium.net>). Xcode uses the JDK to build the shared core.
+2. Copy `ios/Config/Secrets.example.xcconfig` to `ios/Config/Secrets.xcconfig` and put your TomTom key in it. This file is never committed.
+3. Open `ios/HalfNav.xcodeproj` in Xcode. If you change `ios/project.yml`, regenerate the project with [XcodeGen](https://github.com/yonaskolb/XcodeGen): `cd ios && xcodegen generate`.
+
+**Install on your iPhone or iPad:**
+1. In Xcode, go to **Settings → Accounts** and sign in with your Apple ID.
+2. Select the **HalfNav** target, then **Signing & Capabilities**, and choose your account as the **Team**. If Xcode says the bundle ID is taken, change it to something unique.
+3. Plug in the iPhone, pick it as the run destination, and press **Run ▶**.
+4. The first time, on the iPhone: **Settings → General → VPN & Device Management**, tap your Apple ID, and choose **Trust**. iOS 16 and later also ask you to turn on **Developer Mode** (Settings → Privacy & Security).
+
+With a free Apple ID, the app stops opening after 7 days; just press **Run** again from Xcode to renew it. A paid Apple Developer account ($99/year) lasts a year and lets you install over the air with TestFlight.
+
+**Differences from Android:**
+- iOS never lets one app open another from the background. If you choose Google Maps as the voice in end mode, you get a notification to tap instead of an automatic switch.
+- **Google from here** opens Google Maps if it's installed, otherwise Apple Maps.
+- When asked, allow location **While Using**. Directions keep going with the screen off during a trip; iOS shows a blue location pill while it's running.
+
 ## Project layout
 
-- `core/`: pure Kotlin route logic. It parses TomTom search and route responses, finds the interstate handoff point, and tags construction as before or after the handoff. It's unit-tested.
+- `core/`: shared Kotlin Multiplatform logic used by both apps. It parses TomTom search and route responses, finds the interstate handoff point, tags construction as before or after the handoff, snaps GPS fixes onto the route, words the spoken directions, and works out sunrise and sunset. Its tests run on both the JVM and the iOS simulator: `./gradlew :core:allTests`.
 - `app/`: the Android app, with these files:
   - `MainActivity.kt`: map screen, search bar, place card
-  - `TripMap.kt`: the map (MapLibre with OpenFreeMap's free street map)
+  - `TripMap.kt`: the map (MapLibre with OpenFreeMap's free street map), including the drive-view camera
+  - `DriveScreen.kt`, `DriveService.kt`: the drive view and the background trip with voice
   - `RouteReviewScreen.kt`: the construction check screen
-  - `ArrivalWatchService.kt`: end mode
-  - `TomTomClient.kt`, `Locations.kt`, `MapsLauncher.kt`, `Prefs.kt`
-
-Run the tests with `./gradlew :core:test`.
+  - `TomTomClient.kt`, `Locations.kt`, `MapsLauncher.kt`, `Prefs.kt`, `Theme.kt`
+- `ios/`: the iPhone/iPad app (SwiftUI):
+  - `ContentView.swift`, `SearchViews.swift`, `RouteReviewView.swift`, `DriveOverlay.swift`: screens
+  - `TripMap.swift`: the map and drive-view camera
+  - `DriveSession.swift`, `LocationService.swift`, `VoiceGuide.swift`: the background trip with voice
+  - `HalfNavUITests/`: end-to-end tests that drive the app with simulated GPS
 
 ## Limitations
 

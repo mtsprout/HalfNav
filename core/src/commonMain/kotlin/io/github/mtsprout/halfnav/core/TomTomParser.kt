@@ -7,6 +7,7 @@ class RouteException(message: String) : Exception(message)
 /** Parses a TomTom Calculate Route response (sectionType=traffic&sectionType=motorway, instructions on). */
 object TomTomParser {
 
+    @Throws(RouteException::class) // lets Swift catch it instead of crashing
     fun parse(json: String): Route {
         val root = parseJsonObject(json) ?: throw RouteException("Unexpected response from TomTom")
         errorMessage(root)?.let { throw RouteException(it) }

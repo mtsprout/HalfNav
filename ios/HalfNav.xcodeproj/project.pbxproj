@@ -1,0 +1,611 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		07E6935F222D6DAF4B9993C8 /* Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 820FC8F00AC1C7926574D5E3 /* Formatting.swift */; };
+		0BC28077F5343F73801409B8 /* HalfNavCore.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = AAB0E7A25DAC2506EF47657E /* HalfNavCore.xcframework */; };
+		4017623091913C8EEB2E0030 /* HalfNavApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7FB66135B956A09E5AA0303 /* HalfNavApp.swift */; };
+		43AD73A440D127C4C4BAC698 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C77C89B6B679659ACA7B775 /* LocationService.swift */; };
+		4B4A9904721AC1DF60E2A496 /* MapLibre in Frameworks */ = {isa = PBXBuildFile; productRef = D8B282D45F2A84EABAF69040 /* MapLibre */; };
+		4C8DBAA032D170862F9F0EC9 /* RouteReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26CBBDE1AA0C51A618799452 /* RouteReviewView.swift */; };
+		9402D994A243B0BB7C999354 /* VoiceGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55403CC8E73AE503E2DB7C53 /* VoiceGuide.swift */; };
+		960D1F4E3132B8C8C405D5C5 /* SearchViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35B44D0B1EC04704064A28F9 /* SearchViews.swift */; };
+		975995F56F6E91D58F7DB20A /* DriveSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB725C6F5DDEFE6D7B1EA217 /* DriveSession.swift */; };
+		9BD43EDBC13475A0A6AEF903 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29156F855469CCC2381F23EE /* ContentView.swift */; };
+		A0FAB691650AF6CEEF0FACE6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09FBC8180DE06B614CF7E421 /* Assets.xcassets */; };
+		AD760A5842FA9DFBD8F05080 /* (null) in Resources */ = {isa = PBXBuildFile; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		BA8574FB52D6AE42E047281D /* DriveOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AFA236574C624D06EBAFDE7 /* DriveOverlay.swift */; };
+		BCAF3D8BB4EAC3A5431BF81F /* TomTom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B64B7E8B573EA571EA7A7F0 /* TomTom.swift */; };
+		BFF73087BF1DA737D8F0F2C0 /* HalfNavUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D670834F0D1713A96A8078F /* HalfNavUITests.swift */; };
+		C17F4FE8198746BC54E39165 /* VehicleIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21238079A3CF3C5D9DE68804 /* VehicleIcon.swift */; };
+		DC87F2EF42EF97531EA2FD10 /* TripMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8AE6DD53ED7AFBCBEB240A /* TripMap.swift */; };
+		FA660EC9E7E5D1DE3FD038FB /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19882AA586312908D440B0A4 /* AppModel.swift */; };
+		FF6AD02A3B73ACB9A1323766 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D287BD3BF0A2277C89A6A0 /* Settings.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		09D8662EDDE924692918DA0D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9F37F9121FA5D89A9925E1A4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B8696F7EE414B9946AB7B123;
+			remoteInfo = HalfNavCore;
+		};
+		94E263BDB649AA85CE40F79A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9F37F9121FA5D89A9925E1A4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6C4BCBACBDDDA86584730368;
+			remoteInfo = HalfNav;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		09FBC8180DE06B614CF7E421 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		19882AA586312908D440B0A4 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		1AFA236574C624D06EBAFDE7 /* DriveOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriveOverlay.swift; sourceTree = "<group>"; };
+		21238079A3CF3C5D9DE68804 /* VehicleIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleIcon.swift; sourceTree = "<group>"; };
+		26CBBDE1AA0C51A618799452 /* RouteReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteReviewView.swift; sourceTree = "<group>"; };
+		29156F855469CCC2381F23EE /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		2BF0C2C726DCB10E37413D7C /* HalfNav.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HalfNav.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		35B44D0B1EC04704064A28F9 /* SearchViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViews.swift; sourceTree = "<group>"; };
+		4D1D39B56C26A5F8FF5BF609 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		55403CC8E73AE503E2DB7C53 /* VoiceGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceGuide.swift; sourceTree = "<group>"; };
+		5B64B7E8B573EA571EA7A7F0 /* TomTom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TomTom.swift; sourceTree = "<group>"; };
+		5D670834F0D1713A96A8078F /* HalfNavUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HalfNavUITests.swift; sourceTree = "<group>"; };
+		5E8AE6DD53ED7AFBCBEB240A /* TripMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripMap.swift; sourceTree = "<group>"; };
+		7C77C89B6B679659ACA7B775 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
+		820FC8F00AC1C7926574D5E3 /* Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatting.swift; sourceTree = "<group>"; };
+		89149233AE8C0124192D8E05 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A9D287BD3BF0A2277C89A6A0 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
+		AAB0E7A25DAC2506EF47657E /* HalfNavCore.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = HalfNavCore.xcframework; path = ../core/build/XCFrameworks/current/HalfNavCore.xcframework; sourceTree = "<group>"; };
+		BB725C6F5DDEFE6D7B1EA217 /* DriveSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriveSession.swift; sourceTree = "<group>"; };
+		D797145A95DE36746EAC21A6 /* HalfNavUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HalfNavUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F7FB66135B956A09E5AA0303 /* HalfNavApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HalfNavApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9961AFBBC5D9ADF576613307 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4B4A9904721AC1DF60E2A496 /* MapLibre in Frameworks */,
+				0BC28077F5343F73801409B8 /* HalfNavCore.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		6E5FF2CB185569F6CCE6A170 /* HalfNav */ = {
+			isa = PBXGroup;
+			children = (
+				19882AA586312908D440B0A4 /* AppModel.swift */,
+				09FBC8180DE06B614CF7E421 /* Assets.xcassets */,
+				29156F855469CCC2381F23EE /* ContentView.swift */,
+				1AFA236574C624D06EBAFDE7 /* DriveOverlay.swift */,
+				BB725C6F5DDEFE6D7B1EA217 /* DriveSession.swift */,
+				820FC8F00AC1C7926574D5E3 /* Formatting.swift */,
+				F7FB66135B956A09E5AA0303 /* HalfNavApp.swift */,
+				89149233AE8C0124192D8E05 /* Info.plist */,
+				7C77C89B6B679659ACA7B775 /* LocationService.swift */,
+				26CBBDE1AA0C51A618799452 /* RouteReviewView.swift */,
+				35B44D0B1EC04704064A28F9 /* SearchViews.swift */,
+				A9D287BD3BF0A2277C89A6A0 /* Settings.swift */,
+				5B64B7E8B573EA571EA7A7F0 /* TomTom.swift */,
+				5E8AE6DD53ED7AFBCBEB240A /* TripMap.swift */,
+				21238079A3CF3C5D9DE68804 /* VehicleIcon.swift */,
+				55403CC8E73AE503E2DB7C53 /* VoiceGuide.swift */,
+			);
+			path = HalfNav;
+			sourceTree = "<group>";
+		};
+		CFC8112356B2510D3FD4E9F4 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2BF0C2C726DCB10E37413D7C /* HalfNav.app */,
+				D797145A95DE36746EAC21A6 /* HalfNavUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DFF605A364943F2177B877D8 = {
+			isa = PBXGroup;
+			children = (
+				E3F45E8A34C2D4962EE34D02 /* Config */,
+				6E5FF2CB185569F6CCE6A170 /* HalfNav */,
+				E3FA1DF08F0E388EABC6B7B2 /* HalfNavUITests */,
+				E0CD23A2D94191AEBA272E35 /* Frameworks */,
+				CFC8112356B2510D3FD4E9F4 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E0CD23A2D94191AEBA272E35 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				AAB0E7A25DAC2506EF47657E /* HalfNavCore.xcframework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		E3F45E8A34C2D4962EE34D02 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				4D1D39B56C26A5F8FF5BF609 /* Base.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		E3FA1DF08F0E388EABC6B7B2 /* HalfNavUITests */ = {
+			isa = PBXGroup;
+			children = (
+				5D670834F0D1713A96A8078F /* HalfNavUITests.swift */,
+			);
+			path = HalfNavUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXLegacyTarget section */
+		B8696F7EE414B9946AB7B123 /* HalfNavCore */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(SRCROOT)/Config/build-core.sh";
+			buildConfigurationList = 6604C70A46063D82DDAD6679 /* Build configuration list for PBXLegacyTarget "HalfNavCore" */;
+			buildPhases = (
+				C5F62048B6E0D778338DF2FB /* Sources */,
+			);
+			buildToolPath = /bin/sh;
+			buildWorkingDirectory = "$(SRCROOT)";
+			dependencies = (
+			);
+			name = HalfNavCore;
+			packageProductDependencies = (
+			);
+			passBuildSettingsInEnvironment = 1;
+			productName = HalfNavCore;
+		};
+/* End PBXLegacyTarget section */
+
+/* Begin PBXNativeTarget section */
+		6C4BCBACBDDDA86584730368 /* HalfNav */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AAF683C106E58181CBB1CAA4 /* Build configuration list for PBXNativeTarget "HalfNav" */;
+			buildPhases = (
+				73A5F7617D299BEB8C1FF797 /* Sources */,
+				BCE298D9085584E9567F3663 /* Resources */,
+				9961AFBBC5D9ADF576613307 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6C833FC365754ABC895C7FC3 /* PBXTargetDependency */,
+			);
+			name = HalfNav;
+			packageProductDependencies = (
+				D8B282D45F2A84EABAF69040 /* MapLibre */,
+			);
+			productName = HalfNav;
+			productReference = 2BF0C2C726DCB10E37413D7C /* HalfNav.app */;
+			productType = "com.apple.product-type.application";
+		};
+		98DDFE51833BF616EE4AE384 /* HalfNavUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EE1C4F8E92EC3235E983B9F2 /* Build configuration list for PBXNativeTarget "HalfNavUITests" */;
+			buildPhases = (
+				C3F5B72FDE0E7B9F4F690F56 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4C1DFEE0A7188570953187E2 /* PBXTargetDependency */,
+			);
+			name = HalfNavUITests;
+			packageProductDependencies = (
+			);
+			productName = HalfNavUITests;
+			productReference = D797145A95DE36746EAC21A6 /* HalfNavUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9F37F9121FA5D89A9925E1A4 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					98DDFE51833BF616EE4AE384 = {
+						TestTargetID = 6C4BCBACBDDDA86584730368;
+					};
+				};
+			};
+			buildConfigurationList = 4ADD4B75404B8A64F063FBEB /* Build configuration list for PBXProject "HalfNav" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = DFF605A364943F2177B877D8;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1CD3ED2E2355873E9320FE53 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = CFC8112356B2510D3FD4E9F4 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B8696F7EE414B9946AB7B123 /* HalfNavCore */,
+				6C4BCBACBDDDA86584730368 /* HalfNav */,
+				98DDFE51833BF616EE4AE384 /* HalfNavUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BCE298D9085584E9567F3663 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A0FAB691650AF6CEEF0FACE6 /* Assets.xcassets in Resources */,
+				AD760A5842FA9DFBD8F05080 /* (null) in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		73A5F7617D299BEB8C1FF797 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA660EC9E7E5D1DE3FD038FB /* AppModel.swift in Sources */,
+				9BD43EDBC13475A0A6AEF903 /* ContentView.swift in Sources */,
+				BA8574FB52D6AE42E047281D /* DriveOverlay.swift in Sources */,
+				975995F56F6E91D58F7DB20A /* DriveSession.swift in Sources */,
+				07E6935F222D6DAF4B9993C8 /* Formatting.swift in Sources */,
+				4017623091913C8EEB2E0030 /* HalfNavApp.swift in Sources */,
+				43AD73A440D127C4C4BAC698 /* LocationService.swift in Sources */,
+				4C8DBAA032D170862F9F0EC9 /* RouteReviewView.swift in Sources */,
+				960D1F4E3132B8C8C405D5C5 /* SearchViews.swift in Sources */,
+				FF6AD02A3B73ACB9A1323766 /* Settings.swift in Sources */,
+				BCAF3D8BB4EAC3A5431BF81F /* TomTom.swift in Sources */,
+				DC87F2EF42EF97531EA2FD10 /* TripMap.swift in Sources */,
+				C17F4FE8198746BC54E39165 /* VehicleIcon.swift in Sources */,
+				9402D994A243B0BB7C999354 /* VoiceGuide.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C3F5B72FDE0E7B9F4F690F56 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BFF73087BF1DA737D8F0F2C0 /* HalfNavUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C5F62048B6E0D778338DF2FB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4C1DFEE0A7188570953187E2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6C4BCBACBDDDA86584730368 /* HalfNav */;
+			targetProxy = 94E263BDB649AA85CE40F79A /* PBXContainerItemProxy */;
+		};
+		6C833FC365754ABC895C7FC3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B8696F7EE414B9946AB7B123 /* HalfNavCore */;
+			targetProxy = 09D8662EDDE924692918DA0D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		10AED49813D9806A259B0256 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4D1D39B56C26A5F8FF5BF609 /* Base.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		18AD973EE049EE2E95362253 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.mtsprout.halfnav.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = HalfNav;
+			};
+			name = Debug;
+		};
+		2D21076DD26C601BB9A65C38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.mtsprout.halfnav.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = HalfNav;
+			};
+			name = Release;
+		};
+		3152F61D33A82A6FAC993A3A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				HALFNAV_CORE_CONFIG = debug;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.mtsprout.HalfNavCore;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		33073E52AEA662EEC699ED12 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 3;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"../core/build/XCFrameworks/current\"",
+				);
+				HALFNAV_CORE_CONFIG = release;
+				INFOPLIST_FILE = HalfNav/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.mtsprout.halfnav;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		623C1BEB5192973E3DDBE85F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				HALFNAV_CORE_CONFIG = release;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.mtsprout.HalfNavCore;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6D0857EA0BBB737031873BFA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 3;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"../core/build/XCFrameworks/current\"",
+				);
+				HALFNAV_CORE_CONFIG = debug;
+				INFOPLIST_FILE = HalfNav/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.mtsprout.halfnav;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B6CAF06286422B6EBC95BC44 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4D1D39B56C26A5F8FF5BF609 /* Base.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		4ADD4B75404B8A64F063FBEB /* Build configuration list for PBXProject "HalfNav" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B6CAF06286422B6EBC95BC44 /* Debug */,
+				10AED49813D9806A259B0256 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6604C70A46063D82DDAD6679 /* Build configuration list for PBXLegacyTarget "HalfNavCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3152F61D33A82A6FAC993A3A /* Debug */,
+				623C1BEB5192973E3DDBE85F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AAF683C106E58181CBB1CAA4 /* Build configuration list for PBXNativeTarget "HalfNav" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6D0857EA0BBB737031873BFA /* Debug */,
+				33073E52AEA662EEC699ED12 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EE1C4F8E92EC3235E983B9F2 /* Build configuration list for PBXNativeTarget "HalfNavUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				18AD973EE049EE2E95362253 /* Debug */,
+				2D21076DD26C601BB9A65C38 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1CD3ED2E2355873E9320FE53 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/maplibre/maplibre-gl-native-distribution";
+			requirement = {
+				kind = exactVersion;
+				version = 6.31.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D8B282D45F2A84EABAF69040 /* MapLibre */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1CD3ED2E2355873E9320FE53 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */;
+			productName = MapLibre;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 9F37F9121FA5D89A9925E1A4 /* Project object */;
+}

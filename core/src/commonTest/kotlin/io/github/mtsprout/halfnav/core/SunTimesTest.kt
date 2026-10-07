@@ -67,6 +67,19 @@ class SunTimesTest {
     }
 
     @Test
+    fun usesTheLocationsDayNotThePhonesZone() {
+        // 7:59 PM in Texas on Oct 6 is about noon on Oct 7 in Sydney: daytime there, whatever zone the
+        // phone is set to. (This was wrongly reported dark when the phone was on Texas time.)
+        val sydneyLat = -33.8688
+        val sydneyLng = 151.2093
+        val texasEvening = at(chicago, 2026, 10, 6, 19, 59)
+        assertFalse(SunTimes.isDark(texasEvening, sydneyLat, sydneyLng, chicago))
+        assertFalse(SunTimes.isDark(texasEvening, sydneyLat, sydneyLng, TimeZone.of("Australia/Sydney")))
+        // And it's dark in San Antonio at that moment.
+        assertTrue(SunTimes.isDark(texasEvening, 29.4241, -98.4936, chicago))
+    }
+
+    @Test
     fun polarNightAndMidnightSun() {
         val tromso = TimeZone.of("Europe/Oslo")
         val winter = SunTimes.day(LocalDate(2024, 12, 21), 69.65, 18.96)

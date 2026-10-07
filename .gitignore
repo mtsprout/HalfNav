@@ -13,3 +13,9 @@ captures/
 /gradle/*
 !/gradle/wrapper/
 /gradle/wrapper/dists/
+
+# iOS
+/ios/Config/Secrets.xcconfig
+xcuserdata/
+DerivedData/
+*.xcuserstate

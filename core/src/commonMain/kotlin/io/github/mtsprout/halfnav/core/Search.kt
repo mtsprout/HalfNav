@@ -17,6 +17,7 @@ object TomTomSearchParser {
     /** Results closer than this with the same name are treated as duplicates. */
     private const val DUPLICATE_METERS = 300.0
 
+    @Throws(RouteException::class) // lets Swift catch it instead of crashing
     fun parse(json: String): List<Place> {
         val root = parseJsonObject(json) ?: throw RouteException("Unexpected response from TomTom search")
         root.obj("error")?.let { throw RouteException(it.str("description").ifBlank { "Search error" }) }
