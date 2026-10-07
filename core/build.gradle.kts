@@ -1,23 +1,33 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
-    id("org.jetbrains.kotlin.jvm")
+    id("org.jetbrains.kotlin.multiplatform")
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
-
+// Shared logic used by both apps: route planning, search ranking, voice wording, sun times.
+// The JVM target serves Android; the iOS targets are packaged as HalfNavCore.xcframework.
 kotlin {
-    compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
-}
+    jvm {
+        compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+    }
 
-dependencies {
-    // Android ships org.json built in; the JVM needs it for compiling and tests.
-    compileOnly("org.json:json:20240303")
-    testImplementation("org.json:json:20240303")
-    testImplementation(kotlin("test"))
-}
+    val xcframework = XCFramework("HalfNavCore")
+    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
+        target.binaries.framework {
+            baseName = "HalfNavCore"
+            isStatic = true
+            xcframework.add(this)
+        }
+    }
 
-tasks.test { useJUnitPlatform() }
+    sourceSets {
+        commonMain.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+            api("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
+}

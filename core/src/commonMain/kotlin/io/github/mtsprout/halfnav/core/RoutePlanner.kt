@@ -1,5 +1,7 @@
 package io.github.mtsprout.halfnav.core
 
+import kotlin.math.roundToInt
+
 /** Where Google Maps should take you before you're on your own. */
 data class Handoff(
     val point: LatLng,
@@ -83,5 +85,7 @@ object RoutePlanner {
             ?.let { it.roadNumbers.firstOrNull() ?: it.street }
 
     private fun formatMiles(miles: Double): String =
-        if (miles == Math.floor(miles)) miles.toInt().toString() else "%.1f".format(miles)
+        (miles * 10).roundToInt().let { tenths ->
+            if (tenths % 10 == 0) (tenths / 10).toString() else "${tenths / 10}.${tenths % 10}"
+        }
 }

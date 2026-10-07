@@ -44,7 +44,10 @@ object SearchRanking {
         name.lowercase()
             .replace("&", " and ")
             .replace(Regex("['’]s\\b"), "")
-            .split(Regex("[^\\p{L}\\p{N}]+"))
+            // Words are runs of letters and digits (kept portable: iOS regexes lack \p{N}).
+            .map { if (it.isLetterOrDigit()) it else ' ' }
+            .joinToString("")
+            .split(' ')
             .filter { it.isNotBlank() }
             .map { SYNONYMS[it] ?: it }
             .filterNot { it in STOP_WORDS }

@@ -21,8 +21,8 @@ import androidx.core.content.ContextCompat
 import io.github.mtsprout.halfnav.core.LatLng
 import io.github.mtsprout.halfnav.core.SunTimes
 import kotlinx.coroutines.delay
-import java.time.Instant
-import java.time.ZoneId
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
 
 /**
  * Remembers whether the app was last dark, so the very first frame of the next launch (window,
@@ -51,15 +51,15 @@ object ThemeCache {
 @Composable
 fun rememberDarkMode(mode: ThemeMode, here: LatLng?, lastDark: Boolean?): Boolean {
     val systemDark = isSystemInDarkTheme()
-    var now by remember { mutableStateOf(Instant.now()) }
+    var now by remember { mutableStateOf(Clock.System.now()) }
     LaunchedEffect(mode) {
         while (mode == ThemeMode.AUTO) {
             delay(60_000 - System.currentTimeMillis() % 60_000) // on the minute
-            now = Instant.now()
+            now = Clock.System.now()
         }
     }
     return when (mode) {
-        ThemeMode.AUTO -> here?.let { SunTimes.isDark(now, it.lat, it.lng, ZoneId.systemDefault()) }
+        ThemeMode.AUTO -> here?.let { SunTimes.isDark(now, it.lat, it.lng, TimeZone.currentSystemDefault()) }
             ?: lastDark ?: systemDark
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true

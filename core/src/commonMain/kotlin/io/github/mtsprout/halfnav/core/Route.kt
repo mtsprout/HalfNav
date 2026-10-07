@@ -1,5 +1,6 @@
 package io.github.mtsprout.halfnav.core
 
+import kotlin.math.PI
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -9,15 +10,18 @@ import kotlin.math.sqrt
 
 data class LatLng(val lat: Double, val lng: Double)
 
+internal fun rad(degrees: Double) = degrees * PI / 180
+internal fun deg(radians: Double) = radians * 180 / PI
+
 object Geo {
     const val METERS_PER_MILE = 1609.344
     private const val EARTH_RADIUS_M = 6_371_008.8
 
     fun distanceMeters(a: LatLng, b: LatLng): Double {
-        val dLat = Math.toRadians(b.lat - a.lat)
-        val dLng = Math.toRadians(b.lng - a.lng)
+        val dLat = rad(b.lat - a.lat)
+        val dLng = rad(b.lng - a.lng)
         val h = sin(dLat / 2).pow(2) +
-            cos(Math.toRadians(a.lat)) * cos(Math.toRadians(b.lat)) * sin(dLng / 2).pow(2)
+            cos(rad(a.lat)) * cos(rad(b.lat)) * sin(dLng / 2).pow(2)
         return 2 * EARTH_RADIUS_M * asin(sqrt(h))
     }
 
@@ -25,12 +29,12 @@ object Geo {
 
     /** Compass bearing from [a] to [b], 0..360 degrees (0 = north). */
     fun bearing(a: LatLng, b: LatLng): Double {
-        val lat1 = Math.toRadians(a.lat)
-        val lat2 = Math.toRadians(b.lat)
-        val dLng = Math.toRadians(b.lng - a.lng)
+        val lat1 = rad(a.lat)
+        val lat2 = rad(b.lat)
+        val dLng = rad(b.lng - a.lng)
         val y = sin(dLng) * cos(lat2)
         val x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLng)
-        return (Math.toDegrees(atan2(y, x)) + 360) % 360
+        return (deg(atan2(y, x)) + 360) % 360
     }
 }
 
@@ -103,7 +107,7 @@ class Route(
     private fun projectWithin(p: LatLng, fromMeters: Double, toMeters: Double): Projection {
         // Local flat-earth projection in meters around p; plenty accurate for snapping.
         val mPerLat = 111_320.0
-        val mPerLng = 111_320.0 * cos(Math.toRadians(p.lat))
+        val mPerLng = 111_320.0 * cos(rad(p.lat))
         fun x(q: LatLng) = (q.lng - p.lng) * mPerLng
         fun y(q: LatLng) = (q.lat - p.lat) * mPerLat
 
@@ -146,9 +150,15 @@ class Route(
     fun pointAt(offsetMeters: Double): LatLng {
         if (offsetMeters <= 0) return points.first()
         if (offsetMeters >= lengthMeters) return points.last()
-        var i = cumulativeMeters.binarySearch(offsetMeters)
-        if (i >= 0) return points[i]
-        i = -i - 1 // first index whose offset is greater
+        // First index whose offset is at or past offsetMeters (binary search).
+        var lo = 0
+        var hi = cumulativeMeters.lastIndex
+        while (lo < hi) {
+            val mid = (lo + hi) ushr 1
+            if (cumulativeMeters[mid] < offsetMeters) lo = mid + 1 else hi = mid
+        }
+        if (cumulativeMeters[lo] == offsetMeters) return points[lo]
+        val i = lo
         val a = points[i - 1]
         val b = points[i]
         val segment = cumulativeMeters[i] - cumulativeMeters[i - 1]

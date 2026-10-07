@@ -1,8 +1,9 @@
 package io.github.mtsprout.halfnav.core
 
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlin.math.acos
 import kotlin.math.asin
 import kotlin.math.cos
@@ -31,36 +32,40 @@ object SunTimes {
 
     fun day(date: LocalDate, lat: Double, lng: Double): SunDay {
         // Days since J2000 at noon UTC of this date, adjusted to local solar time by longitude.
-        val n = date.toEpochDay() + UNIX_EPOCH_JD + 0.5 - J2000 + 0.0008
+        val n = date.toEpochDays() + UNIX_EPOCH_JD + 0.5 - J2000 + 0.0008
         val meanNoon = n - lng / 360.0
         val m = norm(357.5291 + 0.98560028 * meanNoon)
-        val mRad = Math.toRadians(m)
+        val mRad = rad(m)
         val center = 1.9148 * sin(mRad) + 0.0200 * sin(2 * mRad) + 0.0003 * sin(3 * mRad)
-        val eclipticLng = Math.toRadians(norm(m + center + 180 + 102.9372))
+        val eclipticLng = rad(norm(m + center + 180 + 102.9372))
         val transit = J2000 + meanNoon + 0.0053 * sin(mRad) - 0.0069 * sin(2 * eclipticLng)
-        val declination = asin(sin(eclipticLng) * sin(Math.toRadians(OBLIQUITY)))
+        val declination = asin(sin(eclipticLng) * sin(rad(OBLIQUITY)))
 
-        val phi = Math.toRadians(lat)
-        val cosHourAngle = (sin(Math.toRadians(HORIZON)) - sin(phi) * sin(declination)) /
+        val phi = rad(lat)
+        val cosHourAngle = (sin(rad(HORIZON)) - sin(phi) * sin(declination)) /
             (cos(phi) * cos(declination))
         if (cosHourAngle > 1) return SunDay(null, null, alwaysDown = true)
         if (cosHourAngle < -1) return SunDay(null, null, alwaysUp = true)
-        val halfDay = Math.toDegrees(acos(cosHourAngle)) / 360.0
+        val halfDay = deg(acos(cosHourAngle)) / 360.0
         return SunDay(julianToInstant(transit - halfDay), julianToInstant(transit + halfDay))
     }
 
     /** True between official sunset and the next sunrise, at [lat]/[lng], on the calendar of [zone]. */
-    fun isDark(now: Instant, lat: Double, lng: Double, zone: ZoneId): Boolean {
-        val today = day(now.atZone(zone).toLocalDate(), lat, lng)
+    fun isDark(now: Instant, lat: Double, lng: Double, zone: TimeZone): Boolean {
+        val today = day(now.toLocalDateTime(zone).date, lat, lng)
         return when {
             today.alwaysDown -> true
             today.alwaysUp -> false
-            else -> now.isBefore(today.sunrise) || !now.isBefore(today.sunset)
+            else -> now < today.sunrise!! || now >= today.sunset!!
         }
     }
 
+    /** Same as [isDark], for callers (iOS) that work in epoch milliseconds and zone IDs. */
+    fun isDarkAt(epochMillis: Long, lat: Double, lng: Double, zoneId: String): Boolean =
+        isDark(Instant.fromEpochMilliseconds(epochMillis), lat, lng, TimeZone.of(zoneId))
+
     private fun julianToInstant(jd: Double): Instant =
-        Instant.ofEpochMilli(((jd - UNIX_EPOCH_JD) * 86_400_000).toLong())
+        Instant.fromEpochMilliseconds(((jd - UNIX_EPOCH_JD) * 86_400_000).toLong())
 
     private fun norm(deg: Double) = ((deg % 360) + 360) % 360
 }

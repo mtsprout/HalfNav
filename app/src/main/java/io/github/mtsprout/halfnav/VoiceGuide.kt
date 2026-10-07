@@ -44,8 +44,13 @@ class VoiceGuide(context: Context) : TextToSpeech.OnInitListener {
                 if (!tts.isSpeaking) audio.abandonAudioFocusRequest(focus)
             }
 
-            @Deprecated("Deprecated in Java")
+            // Older Androids only call this version; it's still abstract, so it must be implemented.
+            @Suppress("OVERRIDE_DEPRECATION")
             override fun onError(utteranceId: String?) {
+                audio.abandonAudioFocusRequest(focus)
+            }
+
+            override fun onError(utteranceId: String?, errorCode: Int) {
                 audio.abandonAudioFocusRequest(focus)
             }
         })
