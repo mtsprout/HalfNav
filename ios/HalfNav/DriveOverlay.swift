@@ -74,19 +74,32 @@ private struct InstructionBanner: View {
                 Text("You've arrived").font(.system(size: 26, weight: .bold))
                 Text(trip.destination.name)
             } else if progress.rerouting {
-                HStack(spacing: 12) { ProgressView().tint(.white); Text("Finding a new route…").font(.title3).fontWeight(.semibold) }
+                HStack(spacing: 12) {
+                    ProgressView().tint(.white)
+                    Text("Finding a new route…").font(.title3).fontWeight(.semibold)
+                    Spacer(minLength: 0)
+                    EtaText(remainingSec: remainingSec)
+                }
             } else if let next = progress.next {
                 HStack(spacing: 14) {
                     Text(maneuverGlyph(next.maneuver)).font(.system(size: 44, weight: .bold))
                     VStack(alignment: .leading) {
-                        Text(formatManeuverDistance(progress.metersToNext)).font(.system(size: 26, weight: .bold))
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(formatManeuverDistance(progress.metersToNext)).font(.system(size: 26, weight: .bold))
+                            Spacer(minLength: 12)
+                            EtaText(remainingSec: remainingSec)
+                        }
                         Text(next.message ?? next.street ?? "Continue").lineLimit(2)
                     }
                 }
             } else if progress.position == nil {
                 Text("Waiting for GPS…").font(.title3).fontWeight(.semibold)
             } else {
-                Text("Continue to \(trip.destination.name)").font(.title3).fontWeight(.semibold)
+                HStack {
+                    Text("Continue to \(trip.destination.name)").font(.title3).fontWeight(.semibold).lineLimit(2)
+                    Spacer(minLength: 12)
+                    EtaText(remainingSec: remainingSec)
+                }
             }
             if !progress.arrived {
                 Text(phaseText).font(.footnote).opacity(0.85)
@@ -98,6 +111,8 @@ private struct InstructionBanner: View {
         .background(guided || progress.arrived ? guidedGreen : ownSlate, in: RoundedRectangle(cornerRadius: 16))
         .shadow(radius: 6)
     }
+
+    private var remainingSec: Int { Int(progress.remainingSec(trip)) }
 
     private var phaseText: String {
         let guide = voice == .halfnav ? "HalfNav" : "Google Maps"
@@ -112,6 +127,26 @@ private struct InstructionBanner: View {
             return "\(guide) is guiding you to \(h.label) · \(formatMiles(Geo.shared.metersToMiles(m: h.offsetMeters - progress.offsetMeters)))"
         }
         return "On your own"
+    }
+}
+
+/// "ETA 3:42 PM", with the digits as big as the turn distance beside them.
+private struct EtaText: View {
+    var remainingSec: Int
+
+    var body: some View {
+        let eta = Date().addingTimeInterval(Double(remainingSec))
+        // Keep the digits big and let "ETA" and "PM" ride along smaller.
+        let time = eta.formatted(.dateTime.hour(.defaultDigits(amPM: .omitted)).minute())
+        let amPM = eta.formatted(.dateTime.hour(.defaultDigits(amPM: .abbreviated)))
+            .components(separatedBy: CharacterSet.decimalDigits).joined().trimmingCharacters(in: .whitespaces)
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text("ETA:").font(.system(size: 15, weight: .bold)).padding(.trailing, 4)
+            Text(time).font(.system(size: 26, weight: .bold))
+            if !amPM.isEmpty { Text(amPM).font(.system(size: 15, weight: .bold)) }
+        }
+        .lineLimit(1)
+        .fixedSize()
     }
 }
 
@@ -138,7 +173,6 @@ private struct TripBar: View {
 
     var body: some View {
         let remaining = progress.remainingSec(trip)
-        let eta = Date().addingTimeInterval(Double(remaining)).formatted(date: .omitted, time: .shortened)
         // Dark green on light, light green on dark, so the time is readable on both.
         let timeColor = scheme == .dark ? Color(red: 0x6D / 255, green: 0xD5 / 255, blue: 0x8C / 255) : guidedGreen
         VStack(spacing: 8) {
@@ -153,7 +187,7 @@ private struct TripBar: View {
                             Text(formatMinutes(remaining)).font(.system(size: 22, weight: .bold)).foregroundStyle(timeColor)
                             Text("· \(formatMiles(Geo.shared.metersToMiles(m: progress.remainingMeters(trip))))")
                         }
-                        Text("Arrive \(eta) · \(trip.destination.name)").font(.caption).lineLimit(1)
+                        Text(trip.destination.name).font(.caption).lineLimit(1)
                     }
                 }
                 Spacer()

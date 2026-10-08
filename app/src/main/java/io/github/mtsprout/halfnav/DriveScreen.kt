@@ -33,6 +33,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -142,6 +145,7 @@ private fun InstructionBanner(trip: DriveTrip, progress: DriveProgress, guided: 
     val color = if (guided || progress.arrived) GuidedGreen else OwnSlate
     Surface(color = color, contentColor = Color.White, shape = RoundedCornerShape(16.dp), shadowElevation = 6.dp) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
+            val remainingSec = progress.remainingSec(trip)
             when {
                 progress.arrived -> {
                     Text("You've arrived", fontSize = 26.sp, fontWeight = FontWeight.Bold)
@@ -150,13 +154,22 @@ private fun InstructionBanner(trip: DriveTrip, progress: DriveProgress, guided: 
                 progress.rerouting -> Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
                     Spacer(Modifier.width(12.dp))
-                    Text("Finding a new route…", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Finding a new route…", Modifier.weight(1f), fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                    EtaText(remainingSec)
                 }
                 progress.next != null -> Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(maneuverGlyph(progress.next.maneuver), fontSize = 44.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.width(14.dp))
                     Column {
-                        Text(formatManeuverDistance(progress.metersToNext), fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                formatManeuverDistance(progress.metersToNext),
+                                Modifier.weight(1f),
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            EtaText(remainingSec)
+                        }
                         Text(
                             progress.next.message ?: progress.next.street ?: "Continue",
                             fontSize = 17.sp,
@@ -166,7 +179,17 @@ private fun InstructionBanner(trip: DriveTrip, progress: DriveProgress, guided: 
                     }
                 }
                 progress.position == null -> Text("Waiting for GPS…", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                else -> Text("Continue to ${trip.destination.name}", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                else -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Continue to ${trip.destination.name}",
+                        Modifier.weight(1f),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    EtaText(remainingSec)
+                }
             }
             if (!progress.arrived) {
                 Spacer(Modifier.size(6.dp))
@@ -174,6 +197,28 @@ private fun InstructionBanner(trip: DriveTrip, progress: DriveProgress, guided: 
             }
         }
     }
+}
+
+/** "ETA 3:42 PM", with the digits as big as the turn distance beside them. */
+@Composable
+private fun EtaText(remainingSec: Int) {
+    val eta = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(System.currentTimeMillis() + remainingSec * 1000L))
+    // Keep the digits big and let "PM" (or "p.m.") ride along smaller.
+    val split = Regex("""^(.*\d)[\s\u00A0\u202F]*(\p{L}.*)$""").find(eta)
+    val small = SpanStyle(fontSize = 15.sp)
+    Text(
+        buildAnnotatedString {
+            withStyle(small) { append("ETA:") }
+            append(" ") // full-size space, so the time doesn't crowd the label
+            append(split?.groupValues?.get(1) ?: eta)
+            split?.groupValues?.get(2)?.let { withStyle(small) { append(" $it") } }
+        },
+        Modifier.padding(start = 12.dp),
+        fontSize = 26.sp,
+        fontWeight = FontWeight.Bold,
+        maxLines = 1,
+        softWrap = false,
+    )
 }
 
 private fun phaseText(trip: DriveTrip, progress: DriveProgress, guided: Boolean, voice: VoiceMode): String {
@@ -214,7 +259,6 @@ private fun TripBar(
     onEnd: () -> Unit,
 ) {
     val remainingSec = progress.remainingSec(trip)
-    val eta = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(System.currentTimeMillis() + remainingSec * 1000L))
     Surface(shape = RoundedCornerShape(20.dp), shadowElevation = 8.dp) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -230,7 +274,7 @@ private fun TripBar(
                         }
                     }
                     Text(
-                        if (progress.arrived) trip.destination.name else "Arrive $eta · ${trip.destination.name}",
+                        trip.destination.name,
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
