@@ -10,7 +10,13 @@ data class Place(
     val category: String? = null,
     /** Town and state/region, e.g. "New Braunfels, TX", so look-alike places can be told apart. */
     val locality: String? = null,
-)
+) {
+    /**
+     * A business or public place (church, store, park) rather than a plain street address.
+     * TomTom gives those a category; addresses, streets and saved Home have none.
+     */
+    val isBusiness: Boolean get() = category != null
+}
 
 /** Parses a TomTom Search API (fuzzy search) response. */
 object TomTomSearchParser {
@@ -49,6 +55,25 @@ object TomTomSearchParser {
             if (!duplicate) places += place
         }
         return places
+    }
+
+    /**
+     * Parses a TomTom Reverse Geocode response into the street address at [at], or null if TomTom
+     * has none. The place keeps [at] as its position, so it's exactly where you were standing.
+     */
+    @Throws(RouteException::class)
+    fun parseAddress(json: String, at: LatLng): Place? {
+        val root = parseJsonObject(json) ?: throw RouteException("Unexpected response from TomTom")
+        root.obj("error")?.let { throw RouteException(it.str("description").ifBlank { "Address lookup error" }) }
+        root.str("errorText").takeIf { it.isNotBlank() }?.let { throw RouteException(it) }
+
+        val addr = root.arr("addresses")?.firstOrNull()?.asObject()?.obj("address") ?: return null
+        val freeform = addr.str("freeformAddress").ifBlank { return null }
+        val street = listOfNotNull(
+            addr.str("streetNumber").ifBlank { null },
+            addr.str("streetName").ifBlank { addr.str("street") }.ifBlank { null },
+        ).joinToString(" ").ifBlank { freeform.substringBefore(',') }
+        return Place(street, freeform, at, null, locality(addr))
     }
 
     /** "New Braunfels, TX" in the US; "Scarborough, ON, Canada" elsewhere. */

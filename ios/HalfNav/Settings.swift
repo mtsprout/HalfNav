@@ -47,6 +47,10 @@ final class Settings {
     var recent: [SavedPlace] {
         didSet { d.set(try? JSONEncoder().encode(recent), forKey: "recent") }
     }
+    /// Saved home; its name is always "Home".
+    var home: SavedPlace? {
+        didSet { d.set(home.flatMap { try? JSONEncoder().encode($0) }, forKey: "home") }
+    }
 
     init() {
         mode = Mode(rawValue: d.string(forKey: "mode") ?? "") ?? .startInterstate
@@ -58,6 +62,7 @@ final class Settings {
         voiceMuted = d.bool(forKey: "voiceMuted")
         theme = ThemeMode(rawValue: d.string(forKey: "theme") ?? "") ?? .auto
         recent = (d.data(forKey: "recent")).flatMap { try? JSONDecoder().decode([SavedPlace].self, from: $0) } ?? []
+        home = d.data(forKey: "home").flatMap { try? JSONDecoder().decode(SavedPlace.self, from: $0) }
     }
 
     func addRecent(_ place: Place) {

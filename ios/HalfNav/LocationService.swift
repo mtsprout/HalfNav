@@ -47,6 +47,33 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         }
     }
 
+    /// A position you can pin a house to. The first fix indoors is often from Wi-Fi and a couple
+    /// hundred feet off, so listen at full GPS accuracy until a fix is within goodMeters, or until
+    /// the timeout, and return the most accurate fix seen.
+    func precise(goodMeters: Double = 15, timeout: Duration = .seconds(20)) async -> CLLocation? {
+        if !tripActive {
+            manager.desiredAccuracy = kCLLocationAccuracyBest
+            manager.distanceFilter = kCLDistanceFilterNone
+        }
+        manager.startUpdatingLocation()
+        let started = Date()
+        var best: CLLocation?
+        let deadline = ContinuousClock.now + timeout
+        while ContinuousClock.now < deadline {
+            if let l = manager.location, l.timestamp >= started, l.horizontalAccuracy >= 0,
+               best == nil || l.horizontalAccuracy < best!.horizontalAccuracy {
+                best = l
+            }
+            if let b = best, b.horizontalAccuracy <= goodMeters { break }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        if !tripActive {
+            manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+            manager.distanceFilter = 20
+        }
+        return best ?? manager.location
+    }
+
     func startTrip() {
         tripActive = true
         manager.desiredAccuracy = kCLLocationAccuracyBestForNavigation

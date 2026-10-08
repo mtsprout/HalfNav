@@ -8,18 +8,22 @@ struct SearchBar: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            if model.selected != nil {
+            if model.pickingHome {
+                Button { model.stopPickingHome(); focused.wrappedValue = false } label: { Image(systemName: "chevron.left") }
+            } else if model.selected != nil {
                 Button { model.clearSelection() } label: { Image(systemName: "chevron.left") }
             } else {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
             }
-            TextField("Search here", text: Binding(get: { model.search.query }, set: { model.queryChanged($0) }))
+            TextField(model.pickingHome ? "Search for your home address" : "Search here", text: Binding(get: { model.search.query }, set: { model.queryChanged($0) }))
                 .focused(focused)
                 .submitLabel(.search)
                 .onSubmit { model.searchNow() }
                 .autocorrectionDisabled()
             if !model.search.query.isEmpty {
-                Button { model.clearSelection() } label: { Image(systemName: "xmark") }
+                Button {
+                    if model.pickingHome { model.queryChanged("") } else { model.clearSelection() }
+                } label: { Image(systemName: "xmark") }
             } else {
                 Button(action: onSettings) { Image(systemName: "gearshape.fill") }
             }
@@ -40,7 +44,7 @@ struct Suggestions: View {
 
     var body: some View {
         let s = model.search
-        let showRecent = s.query.isEmpty
+        let showRecent = s.query.isEmpty && !model.pickingHome
         let items: [Place] = showRecent ? model.settings.recent.map(\.place) : s.results
         if !(items.isEmpty && !s.searching && s.error == nil && (showRecent || s.query.count < 2)) {
             FitScroll(maxHeight: maxHeight) {
@@ -58,7 +62,7 @@ struct Suggestions: View {
                     ForEach(Array(items.enumerated()), id: \.offset) { i, place in
                         if i > 0 { Divider().padding(.leading, 52) }
                         PlaceRow(place: place, here: model.location.here) {
-                            model.select(place)
+                            if model.pickingHome { model.setHome(place) } else { model.select(place) }
                             onPicked()
                         }
                     }
@@ -166,6 +170,34 @@ struct MilesSlider: View {
         VStack(alignment: .leading) {
             Text("\(label) \(formatMiles(value))")
             Slider(value: $value, in: range, step: 0.5)
+        }
+    }
+}
+
+/// Small button under the search bar: go home, or set it up the first time.
+struct HomeChip: View {
+    var hasHome: Bool
+    var onTap: () -> Void
+    var onChange: () -> Void
+    var onRemove: () -> Void
+
+    var body: some View {
+        HStack {
+            Button(action: onTap) {
+                Label("Home", systemImage: "house.fill")
+                    .font(.subheadline.weight(.medium))
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .background(Color(.systemBackground), in: Capsule())
+                    .shadow(radius: 4, y: 1)
+            }
+            .buttonStyle(.plain)
+            .contextMenu {
+                if hasHome {
+                    Button("Change Home", systemImage: "pencil", action: onChange)
+                    Button("Remove Home", systemImage: "trash", role: .destructive, action: onRemove)
+                }
+            }
+            Spacer()
         }
     }
 }

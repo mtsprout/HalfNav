@@ -34,6 +34,8 @@ final class AppModel {
     var state: UiState = .idle
     var search = SearchState()
     var selected: Place?
+    /// True while the search bar is picking a home address instead of a destination.
+    var pickingHome = false
     private var searchTask: Task<Void, Never>?
 
     init() {
@@ -92,6 +94,55 @@ final class AppModel {
     }
 
     func reset() { state = .idle }
+
+    // MARK: Home
+
+    static let homeName = "Home"
+
+    /// Search results now set Home instead of choosing a destination.
+    func startPickingHome() {
+        clearSelection()
+        pickingHome = true
+    }
+
+    func stopPickingHome() {
+        guard pickingHome else { return }
+        pickingHome = false
+        searchTask?.cancel()
+        search = SearchState()
+    }
+
+    /// Saves place as Home and shows it, so you can check the address.
+    func setHome(_ place: Place) {
+        let home = Place(name: Self.homeName, address: place.address, latLng: place.latLng,
+                         category: nil, locality: place.locality)
+        pickingHome = false
+        settings.home = SavedPlace(home)
+        select(home)
+    }
+
+    func setHomeHere() {
+        Task {
+            state = .working("Pinpointing your location…")
+            guard let fix = await location.precise() else {
+                state = .error("Couldn't get your location. Is location turned on for HalfNav?", fallback: nil)
+                return
+            }
+            let here = LatLng(lat: fix.coordinate.latitude, lng: fix.coordinate.longitude)
+            state = .working("Looking up the address…")
+            // No address (no signal, rural spot) is fine: Home is still the spot you're standing on.
+            let found = try? await TomTom.address(at: here)
+            let place = found ?? Place(name: Self.homeName, address: String(format: "%.5f, %.5f", here.lat, here.lng),
+                                       latLng: here, category: nil, locality: nil)
+            state = .idle
+            setHome(place)
+        }
+    }
+
+    func removeHome() {
+        if selected?.name == Self.homeName { clearSelection() }
+        settings.home = nil
+    }
 
     // MARK: Trips
 

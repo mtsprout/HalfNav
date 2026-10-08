@@ -87,7 +87,7 @@ final class DriveSession {
     private var routeEnds: [LatLng] = []
 
     private let snapMeters = 35.0, offRouteMeters = 80.0, offRouteNeeded = 3
-    private let arrivedMeters = 40.0, nearDestinationMeters = 120.0, noRerouteMeters = 300.0
+    private let noRerouteMeters = 300.0
     private let minMoveMeters = 8.0
 
     init(settings: Settings, location: LocationService) {
@@ -164,9 +164,14 @@ final class DriveSession {
         let toDestination = Geo.shared.distanceMeters(a: here, b: trip.destination.latLng)
         // The route can end on the nearest road, short of the place itself (e.g. a pedestrian plaza),
         // so reaching the end of any route this trip used counts too.
-        let arrived = prev.arrived || toDestination < nearDestinationMeters ||
-            routeEnds.contains { Geo.shared.distanceMeters(a: here, b: $0) < nearDestinationMeters } ||
-            (onRoute && route.lengthMeters - offset < arrivedMeters)
+        let arrived = prev.arrived || Arrival.shared.reached(
+            destination: trip.destination,
+            onRoute: onRoute,
+            routeLeftMeters: route.lengthMeters - offset,
+            toDestinationMeters: toDestination,
+            toRouteEndMeters: routeEnds.map { Geo.shared.distanceMeters(a: here, b: $0) }.min() ?? .greatestFiniteMagnitude,
+            speedMps: speed
+        )
         let next = route.nextInstruction(offsetMeters: offset, aheadOfMeters: 10)
         let warning = trip.warnings.first { $0.startOffsetMeters + $0.lengthMeters > offset }
 

@@ -38,6 +38,12 @@ object TomTomClient {
         return SearchRanking.nearbyFirst(places, near)
     }
 
+    /** The street address at [at], or null if TomTom has none there. */
+    suspend fun addressAt(at: LatLng): Place? = TomTomSearchParser.parseAddress(
+        get("$BASE/search/2/reverseGeocode/${at.lat},${at.lng}.json?key=${key()}&language=en-US"),
+        at,
+    )
+
     private fun key(): String = BuildConfig.TOMTOM_KEY.ifBlank {
         throw RouteException("No TomTom API key. Add TOMTOM_KEY to local.properties.")
     }

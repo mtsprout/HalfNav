@@ -18,6 +18,7 @@ import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import io.github.mtsprout.halfnav.core.Arrival
 import io.github.mtsprout.halfnav.core.Geo
 import io.github.mtsprout.halfnav.core.LatLng
 import io.github.mtsprout.halfnav.core.RoutePlanner
@@ -175,10 +176,14 @@ class DriveService : Service() {
         // so reaching the end of the route counts too.
         if (routeEnds.isEmpty()) routeEnds += route.points.last()
         val toDestination = Geo.distanceMeters(here, trip.destination.latLng)
-        val arrived = prev.arrived ||
-            toDestination < NEAR_DESTINATION_METERS ||
-            routeEnds.any { Geo.distanceMeters(here, it) < NEAR_DESTINATION_METERS } ||
-            (onRoute && route.lengthMeters - offset < ARRIVED_METERS)
+        val arrived = prev.arrived || Arrival.reached(
+            destination = trip.destination,
+            onRoute = onRoute,
+            routeLeftMeters = route.lengthMeters - offset,
+            toDestinationMeters = toDestination,
+            toRouteEndMeters = routeEnds.minOf { Geo.distanceMeters(here, it) },
+            speedMps = speed.toDouble(),
+        )
         val next = route.nextInstruction(offset)
         val warning = trip.warnings.firstOrNull { it.startOffsetMeters + it.lengthMeters > offset }
 
@@ -338,9 +343,6 @@ class DriveService : Service() {
         private const val OFF_ROUTE_FIXES = 3
         private const val REROUTE_INTERVAL_MS = 30_000L
         private const val MIN_MOVE_METERS = 8.0
-        private const val ARRIVED_METERS = 40.0
-        /** Close enough to a landmark to call it arrived; you usually park somewhere nearby. */
-        private const val NEAR_DESTINATION_METERS = 120.0
         /** Within this distance of the destination, don't reroute. */
         private const val NO_REROUTE_METERS = 300.0
 

@@ -62,6 +62,55 @@ final class HalfNavUITests: XCTestCase {
         XCTAssertTrue(ok, "route check didn't appear")
     }
 
+    /// Clears any saved home, so the Home button starts with "Set Home".
+    private func removeHome() {
+        let home = app.buttons["Home"]
+        XCTAssertTrue(home.waitForExistence(timeout: 10))
+        home.press(forDuration: 1.2)
+        let remove = app.buttons["Remove Home"]
+        if remove.waitForExistence(timeout: 3) { remove.tap() } else { app.tap() }
+    }
+
+    func testSetHomeByAddress() {
+        launch(at: newBraunfels)
+        removeHome()
+        app.buttons["Home"].tap()
+        let enter = app.buttons["Enter an Address"]
+        XCTAssertTrue(enter.waitForExistence(timeout: 5))
+        shot("30-set-home")
+        enter.tap()
+        let field = app.textFields["Search for your home address"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.typeText("386 North Castell Avenue New Braunfels")
+        let result = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Castell")).firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 15))
+        shot("31-home-results")
+        result.tap()
+        XCTAssertTrue(app.buttons["Go"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Home"].exists)
+        shot("32-home-set")
+
+        // Next time, Home goes straight to the saved place.
+        app.terminate()
+        launch(at: newBraunfels)
+        app.buttons["Home"].tap()
+        XCTAssertTrue(app.buttons["Go"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Castell'")).firstMatch.exists)
+        shot("33-home-again")
+    }
+
+    func testSetHomeHere() {
+        launch(at: newBraunfels)
+        removeHome()
+        app.buttons["Home"].tap()
+        let here = app.buttons["Use My Location"]
+        XCTAssertTrue(here.waitForExistence(timeout: 5))
+        here.tap()
+        XCTAssertTrue(app.buttons["Go"].waitForExistence(timeout: 30))
+        shot("34-home-here")
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'New Braunfels'")).firstMatch.exists)
+    }
+
     /// Plays back a real route (lat,lng per line, from $HALFNAV_DRIVE) at one position per second.
     func testGuidedDrive() throws {
         let path = try XCTUnwrap(ProcessInfo.processInfo.environment["HALFNAV_DRIVE"], "set HALFNAV_DRIVE")

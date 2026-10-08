@@ -77,6 +77,28 @@ class SearchTest {
     }
 
     @Test
+    fun reverseGeocodeGivesStreetAddress() {
+        // Shape of a TomTom Reverse Geocode response.
+        val json = """
+            {"summary":{"numResults":1},"addresses":[
+              {"address":{"streetNumber":"386","streetName":"North Castell Avenue","municipality":"New Braunfels",
+                 "countrySubdivisionCode":"TX","countryCode":"US",
+                 "freeformAddress":"386 North Castell Avenue, New Braunfels, TX 78130"},
+               "position":"29.703600,-98.128300"}
+            ]}
+        """
+        val at = LatLng(29.7037, -98.1284)
+        val place = TomTomSearchParser.parseAddress(json, at)!!
+        assertEquals("386 North Castell Avenue", place.name)
+        assertEquals("386 North Castell Avenue, New Braunfels, TX 78130", place.address)
+        assertEquals("New Braunfels, TX", place.locality)
+        assertEquals(at, place.latLng)
+
+        assertEquals(null, TomTomSearchParser.parseAddress("""{"addresses":[]}""", at))
+        assertFailsWith<RouteException> { TomTomSearchParser.parseAddress("""{"errorText":"Invalid key"}""", at) }
+    }
+
+    @Test
     fun routeSliceFollowsGeometry() {
         val pts = (0..10).map { LatLng(40.0 + it * 0.001, -75.0) }
         val r = Route(pts, 0, emptyList(), emptyList(), emptyList())

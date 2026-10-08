@@ -49,6 +49,16 @@ enum TomTom {
         return SearchRanking.shared.nearbyFirst(places: places, here: near)
     }
 
+    /// The street address at [at], or nil if TomTom has none there.
+    static func address(at: LatLng) async throws -> Place? {
+        let body = try await get("\(base)/search/2/reverseGeocode/\(at.lat),\(at.lng).json?key=\(try key)&language=en-US")
+        do {
+            return try TomTomSearchParser.shared.parseAddress(json: body, at: at)
+        } catch {
+            throw Failure(message: kotlinMessage(error) ?? "Unexpected response from TomTom")
+        }
+    }
+
     private static func get(_ url: String) async throws -> String {
         guard let u = URL(string: url) else { throw Failure(message: "Bad request") }
         var req = URLRequest(url: u)

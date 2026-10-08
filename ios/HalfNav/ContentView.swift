@@ -8,6 +8,8 @@ struct ContentView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @FocusState private var searchFocused: Bool
     @State private var showSettings = false
+    @State private var askHome = false
+    @State private var noLocationForHome = false
     @State private var following = true
     @State private var recenter = 0
     @State private var topInset: CGFloat = 0
@@ -18,6 +20,32 @@ struct ContentView: View {
     private var driveShown: Bool { drive.trip != nil && drive.visible }
     /// iPad (and large landscape phones): panels in a side column instead of a bottom sheet.
     private var wide: Bool { sizeClass == .regular }
+
+    /// Under the search bar while you're just looking at the map.
+    private var showHomeChip: Bool {
+        guard model.selected == nil, case .idle = model.state else { return false }
+        return true
+    }
+
+    private var homeChip: some View {
+        HomeChip(
+            hasHome: model.settings.home != nil,
+            onTap: {
+                if let home = model.settings.home { model.select(home.place) } else { askHome = true }
+            },
+            onChange: { askHome = true },
+            onRemove: { model.removeHome() }
+        )
+    }
+
+    private func setHomeHere() {
+        if model.location.authorized { model.setHomeHere() } else { noLocationForHome = true }
+    }
+
+    private func enterHomeAddress() {
+        model.startPickingHome()
+        searchFocused = true
+    }
 
     private var review: TripPlan? {
         if case .review(let p) = model.state { return p }
@@ -74,6 +102,20 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showSettings) { SettingsView(settings: model.settings) }
+        .confirmationDialog("Set Home", isPresented: $askHome, titleVisibility: .visible) {
+            Button("Use My Location") { setHomeHere() }
+            Button("Enter an Address") { enterHomeAddress() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you at home right now? HalfNav can save your current location as Home.")
+        }
+        .alert("Set Home", isPresented: $noLocationForHome) {
+            Button("Enter an Address") { enterHomeAddress() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Without location access, HalfNav can't tell where you are. You can enter your address instead, or allow location for HalfNav in the Settings app.")
+        }
+        .onChange(of: searchFocused) { _, focused in if !focused { model.stopPickingHome() } }
         .onChange(of: drive.trip == nil) { _, ended in if !ended { following = true } }
         .onAppear { model.location.start() }
     }
@@ -94,8 +136,11 @@ struct ContentView: View {
                 .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { topInset = $0 + 16 }
             if searchFocused {
                 Suggestions(model: model, maxHeight: geo.size.height * 0.55) { searchFocused = false }
-            } else if let trip = drive.trip {
-                ResumeCard(trip: trip, onResume: { drive.visible = true }, onEnd: { drive.stop() })
+            } else {
+                if showHomeChip { homeChip }
+                if let trip = drive.trip {
+                    ResumeCard(trip: trip, onResume: { drive.visible = true }, onEnd: { drive.stop() })
+                }
             }
             Spacer()
             if !searchFocused {
@@ -126,6 +171,7 @@ struct ContentView: View {
             if searchFocused {
                 Suggestions(model: model, maxHeight: 600) { searchFocused = false }
             } else {
+                if showHomeChip { homeChip }
                 if let trip = drive.trip {
                     ResumeCard(trip: trip, onResume: { drive.visible = true }, onEnd: { drive.stop() })
                 }

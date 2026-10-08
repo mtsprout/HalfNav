@@ -17,6 +17,10 @@ Before a start-mode trip, the map draws your route:
 
 In end mode, the map shades the zone where guidance will kick in.
 
+## Home
+
+The **Home** button under the search bar takes you home in one tap. The first time you press it, HalfNav offers to save where you are now as Home, or you can search for your address instead. To change or remove Home later, long-press the button.
+
 ## Drive view
 
 Once you're under way, HalfNav shows a GPS-style drive view:

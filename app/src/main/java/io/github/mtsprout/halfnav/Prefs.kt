@@ -46,6 +46,8 @@ data class Settings(
     val voiceMuted: Boolean = false,
     val theme: ThemeMode = ThemeMode.AUTO,
     val recent: List<Place> = emptyList(),
+    /** Saved home; its name is always "Home". */
+    val home: Place? = null,
 )
 
 class Prefs(private val context: Context) {
@@ -59,6 +61,7 @@ class Prefs(private val context: Context) {
         val voice = stringPreferencesKey("voice")
         val voiceMuted = booleanPreferencesKey("voice_muted")
         val theme = stringPreferencesKey("theme")
+        val home = stringPreferencesKey("home")
     }
 
     val settings: Flow<Settings> = context.dataStore.data.map { p ->
@@ -72,6 +75,7 @@ class Prefs(private val context: Context) {
             voiceMuted = p[Keys.voiceMuted] ?: false,
             theme = p[Keys.theme]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.AUTO,
             recent = decode(p[Keys.recent]),
+            home = decode(p[Keys.home]).firstOrNull(),
         )
     }
 
@@ -83,6 +87,10 @@ class Prefs(private val context: Context) {
     suspend fun setVoice(v: VoiceMode) = context.dataStore.edit { it[Keys.voice] = v.name }
     suspend fun setVoiceMuted(v: Boolean) = context.dataStore.edit { it[Keys.voiceMuted] = v }
     suspend fun setTheme(v: ThemeMode) = context.dataStore.edit { it[Keys.theme] = v.name }
+
+    suspend fun setHome(place: Place?) = context.dataStore.edit { p ->
+        if (place == null) p.remove(Keys.home) else p[Keys.home] = encode(listOf(place))
+    }
 
     suspend fun addRecent(place: Place) = context.dataStore.edit { p ->
         val others = decode(p[Keys.recent]).filterNot { it.name == place.name && it.address == place.address }

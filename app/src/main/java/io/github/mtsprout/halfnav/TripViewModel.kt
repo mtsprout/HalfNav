@@ -61,6 +61,10 @@ class TripViewModel(app: Application) : AndroidViewModel(app) {
 
     private var searchJob: Job? = null
 
+    /** True while the search bar is picking a home address instead of a destination. */
+    private val _pickingHome = MutableStateFlow(false)
+    val pickingHome: StateFlow<Boolean> = _pickingHome
+
     /** Call once location permission is granted. */
     fun refreshLocation() {
         viewModelScope.launch {
@@ -118,6 +122,53 @@ class TripViewModel(app: Application) : AndroidViewModel(app) {
         _selected.value = null
         _search.value = SearchState()
         _state.value = UiState.Idle
+    }
+
+    // --- Home ---
+
+    /** Search results now set Home instead of choosing a destination. */
+    fun startPickingHome() {
+        clearSelection()
+        _pickingHome.value = true
+    }
+
+    fun stopPickingHome() {
+        if (!_pickingHome.value) return
+        _pickingHome.value = false
+        searchJob?.cancel()
+        _search.value = SearchState()
+    }
+
+    /** Saves [place] as Home and shows it, so you can check the address. */
+    fun setHome(place: Place) {
+        val home = place.copy(name = HOME, category = null)
+        _pickingHome.value = false
+        viewModelScope.launch { prefs.setHome(home) }
+        select(home)
+    }
+
+    /** Call only once location permission is granted. */
+    fun setHomeHere() {
+        viewModelScope.launch {
+            _state.value = UiState.Working("Pinpointing your location…")
+            val here = runCatching { Locations.precise(context) }.getOrNull()
+            if (here == null) {
+                _state.value = UiState.Error("Couldn't get your location. Is GPS on?")
+                return@launch
+            }
+            _here.value = here
+            _state.value = UiState.Working("Looking up the address…")
+            // No address (no signal, rural spot) is fine: Home is still the spot you're standing on.
+            val place = runCatching { TomTomClient.addressAt(here) }.getOrNull()
+                ?: Place(HOME, "%.5f, %.5f".format(here.lat, here.lng), here)
+            _state.value = UiState.Idle
+            setHome(place)
+        }
+    }
+
+    fun removeHome() {
+        if (_selected.value?.name == HOME) clearSelection()
+        viewModelScope.launch { prefs.setHome(null) }
     }
 
     // --- Trips ---
@@ -257,5 +308,6 @@ class TripViewModel(app: Application) : AndroidViewModel(app) {
 
     private companion object {
         const val SEARCH_DEBOUNCE_MS = 300L
+        const val HOME = "Home"
     }
 }

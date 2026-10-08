@@ -15,7 +15,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -39,6 +41,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
@@ -73,6 +76,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
@@ -134,6 +139,7 @@ private fun App(vm: TripViewModel, dark: Boolean) {
     val drive by vm.drive.collectAsStateWithLifecycle()
     val driveProgress by vm.driveProgress.collectAsStateWithLifecycle()
     val driveVisible by vm.driveVisible.collectAsStateWithLifecycle()
+    val pickingHome by vm.pickingHome.collectAsStateWithLifecycle()
     val driveShown = drive != null && driveVisible
     var following by remember { mutableStateOf(true) }
     var driveBottomPx by remember { mutableIntStateOf(0) }
@@ -146,6 +152,9 @@ private fun App(vm: TripViewModel, dark: Boolean) {
     var bottomPx by remember { mutableIntStateOf(0) }
     var pendingGo by remember { mutableStateOf<Place?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
+    var pendingHomeHere by remember { mutableStateOf(false) }
+    var homeDialog by remember { mutableStateOf<HomeDialog?>(null) }
+    val searchFocus = remember { FocusRequester() }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -158,6 +167,23 @@ private fun App(vm: TripViewModel, dark: Boolean) {
         if (place != null) {
             if (locationPermitted) vm.go(place) else message = "HalfNav needs precise location to plan your trip."
         }
+        if (pendingHomeHere) {
+            pendingHomeHere = false
+            if (locationPermitted) vm.setHomeHere() else homeDialog = HomeDialog.NO_LOCATION
+        }
+    }
+
+    fun setHomeHere() {
+        if (locationPermitted) vm.setHomeHere()
+        else {
+            pendingHomeHere = true
+            permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        }
+    }
+
+    // "Enter an address": the search bar now picks Home, so put the cursor in it.
+    LaunchedEffect(pickingHome) {
+        if (pickingHome) searchFocus.requestFocus()
     }
 
     LaunchedEffect(Unit) {
@@ -193,10 +219,11 @@ private fun App(vm: TripViewModel, dark: Boolean) {
         }
     }
 
-    BackHandler(enabled = driveShown || searchFocused || state !is UiState.Idle || selected != null) {
+    BackHandler(enabled = driveShown || searchFocused || pickingHome || state !is UiState.Idle || selected != null) {
         when {
             driveShown -> vm.hideDrive()
             searchFocused -> focusManager.clearFocus()
+            pickingHome -> vm.stopPickingHome()
             state !is UiState.Idle -> vm.reset()
             else -> vm.clearSelection()
         }
@@ -248,31 +275,48 @@ private fun App(vm: TripViewModel, dark: Boolean) {
         ) {
             SearchBar(
                 query = search.query,
-                hasSelection = selected != null,
+                placeholder = if (pickingHome) "Search for your home address" else "Search here",
+                hasSelection = selected != null || pickingHome,
                 onQueryChange = {
                     if (state !is UiState.Idle) vm.reset()
                     vm.onQueryChange(it)
                 },
                 onSearch = vm::searchNow,
                 onClear = {
-                    vm.clearSelection()
+                    if (pickingHome) {
+                        vm.stopPickingHome()
+                        focusManager.clearFocus()
+                    } else vm.clearSelection()
                 },
                 onSettings = { showSettings = true },
-                onFocusChange = { searchFocused = it },
+                onFocusChange = {
+                    searchFocused = it
+                    if (!it) vm.stopPickingHome()
+                },
+                focusRequester = searchFocus,
                 modifier = Modifier.onSizeChanged { topPx = it.height + with(density) { 40.dp.roundToPx() } },
             )
             if (searchFocused) {
                 Suggestions(
                     search = search,
-                    recent = settings.recent,
+                    recent = if (pickingHome) emptyList() else settings.recent,
                     here = here,
                     maxHeight = maxPanel,
                     onPick = {
-                        vm.select(it)
+                        if (pickingHome) vm.setHome(it) else vm.select(it)
                         focusManager.clearFocus()
                     },
                 )
             } else {
+                if (selected == null && state is UiState.Idle) {
+                    HomeChip(
+                        onClick = {
+                            val home = settings.home
+                            if (home != null) vm.select(home) else homeDialog = HomeDialog.SET
+                        },
+                        onLongClick = { if (settings.home != null) homeDialog = HomeDialog.EDIT },
+                    )
+                }
                 val d = drive
                 if (d != null) ResumeDriveCard(d, onResume = vm::showDrive, onEnd = vm::endDrive)
                 else watch?.let { WatchBanner(it, onCancel = { ArrivalWatchService.stop(context) }) }
@@ -350,17 +394,100 @@ private fun App(vm: TripViewModel, dark: Boolean) {
     }
 
     if (showSettings) SettingsDialog(settings, vm, onDismiss = { showSettings = false })
+    homeDialog?.let { d ->
+        HomeDialogs(
+            dialog = d,
+            home = settings.home,
+            onUseLocation = { homeDialog = null; setHomeHere() },
+            onEnterAddress = { homeDialog = null; vm.startPickingHome() },
+            onChange = { homeDialog = HomeDialog.SET },
+            onRemove = { homeDialog = null; vm.removeHome() },
+            onDismiss = { homeDialog = null },
+        )
+    }
+}
+
+private enum class HomeDialog {
+    /** First tap: where is home? */
+    SET,
+    /** Long press once home is saved: change or remove it. */
+    EDIT,
+    /** Location permission was declined while setting home here. */
+    NO_LOCATION,
+}
+
+@OptIn(ExperimentalFoundationApi::class) // combinedClickable, for the long press
+@Composable
+private fun HomeChip(onClick: () -> Unit, onLongClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        shadowElevation = 4.dp,
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Row(
+            Modifier
+                .combinedClickable(onClickLabel = "Home", onLongClickLabel = "Change home", onClick = onClick, onLongClick = onLongClick)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Filled.Home, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(6.dp))
+            Text("Home", style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+@Composable
+private fun HomeDialogs(
+    dialog: HomeDialog,
+    home: Place?,
+    onUseLocation: () -> Unit,
+    onEnterAddress: () -> Unit,
+    onChange: () -> Unit,
+    onRemove: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    when (dialog) {
+        HomeDialog.SET -> AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Set Home") },
+            text = { Text("Are you at home right now? HalfNav can save your current location as Home.") },
+            confirmButton = { TextButton(onClick = onUseLocation) { Text("Use my location") } },
+            dismissButton = { TextButton(onClick = onEnterAddress) { Text("Enter an address") } },
+        )
+        HomeDialog.EDIT -> AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Home") },
+            text = { Text(home?.address.orEmpty()) },
+            confirmButton = { TextButton(onClick = onChange) { Text("Change") } },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = onRemove) { Text("Remove") }
+                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                }
+            },
+        )
+        HomeDialog.NO_LOCATION -> AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Set Home") },
+            text = { Text("Without location access, HalfNav can't tell where you are. You can enter your address instead.") },
+            confirmButton = { TextButton(onClick = onEnterAddress) { Text("Enter an address") } },
+            dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        )
+    }
 }
 
 @Composable
 private fun SearchBar(
     query: String,
+    placeholder: String,
     hasSelection: Boolean,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onClear: () -> Unit,
     onSettings: () -> Unit,
     onFocusChange: (Boolean) -> Unit,
+    focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -372,7 +499,7 @@ private fun SearchBar(
         TextField(
             value = query,
             onValueChange = onQueryChange,
-            placeholder = { Text("Search here") },
+            placeholder = { Text(placeholder) },
             singleLine = true,
             leadingIcon = {
                 if (hasSelection) {
@@ -398,6 +525,7 @@ private fun SearchBar(
             ),
             modifier = Modifier
                 .fillMaxWidth()
+                .focusRequester(focusRequester)
                 .onFocusChanged { onFocusChange(it.isFocused) },
         )
     }
