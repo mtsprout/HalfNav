@@ -20,6 +20,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import io.github.mtsprout.halfnav.core.Arrival
+import io.github.mtsprout.halfnav.core.ConstructionWarning
 import io.github.mtsprout.halfnav.core.Geo
 import io.github.mtsprout.halfnav.core.LatLng
 import io.github.mtsprout.halfnav.core.RoutePlanner
@@ -387,6 +388,11 @@ class DriveService : Service() {
         data class Sim(val speedMps: Float, val jumpMeters: Double = 0.0)
 
         val simulation = MutableStateFlow<Sim?>(null)
+
+        /** Debug builds only: swaps the running trip's construction warnings for [warnings]. */
+        fun replaceWarnings(warnings: List<ConstructionWarning>) {
+            _trip.value = _trip.value?.copy(warnings = warnings)
+        }
 
         private val _trip = MutableStateFlow<DriveTrip?>(null)
         val trip: StateFlow<DriveTrip?> = _trip

@@ -262,8 +262,10 @@ class CarMap(private val carContext: CarContext) : SurfaceCallback {
      */
     private fun easedLookAhead(trip: DriveTrip, p: DriveProgress): Double {
         val base = (p.speedMps * 25.0).coerceIn(500.0, 2500.0)
-        val turnClose = p.next != null && p.guided(trip) && p.metersToNext < base
-        val target = if (turnClose) (p.metersToNext * 1.5 + 150.0).coerceIn(MIN_LOOK_AHEAD, base) else base
+        // Closes in from about 350 m out to 150 m at the turn itself.
+        val closing = (p.metersToNext * 1.2 + 80.0).coerceIn(MIN_LOOK_AHEAD, base)
+        val turnClose = p.next != null && p.guided(trip) && closing < base
+        val target = if (turnClose) closing else base
         val now = if (shownLookAhead <= 0.0) target else shownLookAhead + (target - shownLookAhead) * ZOOM_EASE
         shownLookAhead = now
         return now
@@ -304,7 +306,7 @@ class CarMap(private val carContext: CarContext) : SurfaceCallback {
         const val KIND_GUIDED = 1
         const val KIND_ALONE = 2
         const val BEHIND_METERS = 300.0
-        const val MIN_LOOK_AHEAD = 300.0
+        const val MIN_LOOK_AHEAD = 150.0
         const val ZOOM_EASE = 0.35
 
         const val BLUE = 0xFF1A73E8.toInt()
