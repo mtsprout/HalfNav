@@ -203,7 +203,7 @@ class DriveService : Service() {
         _progress.value = progress
 
         val guided = progress.guided(trip)
-        if (guided && trip.mode == Mode.END_MILES && settings.voice == VoiceMode.GOOGLE && !handedOffToGoogle) {
+        if (guided && trip.mode == Mode.END_MILES && voiceFor(trip) == VoiceMode.GOOGLE && !handedOffToGoogle) {
             handedOffToGoogle = true
             MapsLauncher.handOff(
                 this, trip.destination.latLng,
@@ -220,10 +220,13 @@ class DriveService : Service() {
         ) reroute(here)
     }
 
+    /** In the car, HalfNav always speaks: Google Maps can't take over on the car screen. */
+    private fun voiceFor(trip: DriveTrip) = if (trip.inCar) VoiceMode.HALFNAV else settings.voice
+
     private fun speakFor(trip: DriveTrip, progress: DriveProgress, guided: Boolean) {
         // With Google Maps as the voice, Google talks during the guided part; HalfNav stays out of
         // its way and only speaks up (construction, arrival) while you're on your own.
-        if (settings.voice == VoiceMode.GOOGLE && guided) return
+        if (voiceFor(trip) == VoiceMode.GOOGLE && guided) return
         val label = trip.handoff?.label?.let { SpokenText.instruction(it) }
         val starts = when {
             trip.mode == Mode.END_MILES ->
@@ -237,7 +240,7 @@ class DriveService : Service() {
         val w = progress.nextWarning
         val said = prompts.update(
             VoiceInput(
-                guided = guided && settings.voice == VoiceMode.HALFNAV,
+                guided = guided && voiceFor(trip) == VoiceMode.HALFNAV,
                 next = progress.next,
                 metersToNext = progress.metersToNext,
                 speedMps = progress.speedMps,
@@ -251,6 +254,7 @@ class DriveService : Service() {
                 guidanceStarts = starts,
                 guidanceEnds = ends,
                 routeVersion = routeVersion,
+                parkingLot = trip.endsAtParking,
             )
         )
         if (said.isNotEmpty() && !settings.voiceMuted) voice?.speak(said)
@@ -262,12 +266,12 @@ class DriveService : Service() {
         val trip = _trip.value ?: return
         lastRerouteAt = System.currentTimeMillis()
         _progress.value = _progress.value.copy(rerouting = true)
-        if (!settings.voiceMuted && settings.voice == VoiceMode.HALFNAV && _progress.value.guided(trip)) {
+        if (!settings.voiceMuted && voiceFor(trip) == VoiceMode.HALFNAV && _progress.value.guided(trip)) {
             voice?.speak(listOf("Rerouting."))
         }
         rerouteJob = scope.launch {
             try {
-                val route = TomTomClient.route(from, trip.destination.latLng)
+                val route = TomTomClient.route(from, trip.routeTarget)
                 // Keep the old handoff point if we haven't reached it and the new route still passes it.
                 val oldHandoff = trip.handoff?.takeIf { _progress.value.guided(trip) }
                 val handoff = oldHandoff?.let { h ->
@@ -295,7 +299,7 @@ class DriveService : Service() {
 
     private fun updateNotification(trip: DriveTrip, progress: DriveProgress, guided: Boolean) {
         val text = when {
-            progress.arrived -> "You've arrived"
+            progress.arrived -> if (trip.endsAtParking) "Turn into the parking lot" else "You've arrived"
             guided && progress.next?.message != null ->
                 "${formatManeuverDistance(progress.metersToNext)} · ${progress.next.message}"
             else -> "On your own · ${formatMiles(Geo.metersToMiles(progress.remainingMeters(trip)))} to go"

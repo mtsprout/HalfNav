@@ -6,6 +6,8 @@ import io.github.mtsprout.halfnav.core.Geo
 import io.github.mtsprout.halfnav.core.Handoff
 import io.github.mtsprout.halfnav.core.Instruction
 import io.github.mtsprout.halfnav.core.LatLng
+import io.github.mtsprout.halfnav.core.Parking
+import io.github.mtsprout.halfnav.core.ParkingLot
 import io.github.mtsprout.halfnav.core.Place
 import io.github.mtsprout.halfnav.core.Route
 import io.github.mtsprout.halfnav.core.RoutePlanner
@@ -20,15 +22,26 @@ data class DriveTrip(
     val warnings: List<ConstructionWarning>,
     /** End mode: Google Maps takes over within this many miles of the destination. */
     val watchMiles: Float? = null,
+    /** The destination's own parking lot; the route goes to its entrance. */
+    val parking: ParkingLot? = null,
+    /** Started from Android Auto: HalfNav's own voice speaks, since Google Maps can't take over on the car screen. */
+    val inCar: Boolean = false,
 ) {
+    /** Where routes (and reroutes) go. */
+    val routeTarget: LatLng get() = parking?.entrance ?: destination.latLng
+
+    /** Arriving means turning into a parking lot: the destination's, or a lot you picked. */
+    val endsAtParking: Boolean get() = parking != null || Parking.isParking(destination)
+
     companion object {
         fun fromPlan(plan: TripPlan, mode: Mode) =
-            DriveTrip(plan.destination, plan.route, mode, plan.handoff, plan.warnings)
+            DriveTrip(plan.destination, plan.route, mode, plan.handoff, plan.warnings, parking = plan.parking)
 
-        fun endMode(destination: Place, route: Route, watchMiles: Float) = DriveTrip(
+        fun endMode(destination: Place, route: Route, watchMiles: Float, parking: ParkingLot?) = DriveTrip(
             destination, route, Mode.END_MILES, handoff = null,
             warnings = RoutePlanner.construction(route, wholeRouteHandoff(route)),
             watchMiles = watchMiles,
+            parking = parking,
         )
 
         /** A stand-in handoff at the destination, for listing construction along the whole route. */

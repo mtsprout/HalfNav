@@ -56,6 +56,7 @@ class VoiceTest {
         arrived: Boolean = false,
         rerouting: Boolean = false,
         routeVersion: Int = 0,
+        parkingLot: Boolean = false,
     ) = VoiceInput(
         guided = guided, next = next, metersToNext = metersToNext, speedMps = speed,
         warningKey = warningKey, warningWhat = warningKey?.let { "Road work" }, warningRoad = "I-35 S",
@@ -64,6 +65,7 @@ class VoiceTest {
         guidanceStarts = "Starting guidance to I 35.",
         guidanceEnds = "You're on I 35. Guidance ends here. You're on your own.",
         routeVersion = routeVersion,
+        parkingLot = parkingLot,
     )
 
     @Test
@@ -134,6 +136,14 @@ class VoiceTest {
         assertEquals(emptyList(), v.update(input(rerouting = true)))
         assertEquals(listOf("You've arrived at the Alamo."), v.update(input(arrived = true)))
         assertEquals(emptyList(), v.update(input(arrived = true)))
+    }
+
+    @Test
+    fun arrivingAtTheParkingLot() {
+        val v = VoicePrompts()
+        v.update(input(parkingLot = true))
+        assertEquals(listOf("Turn into the parking lot."), v.update(input(arrived = true, parkingLot = true)))
+        assertEquals(emptyList(), v.update(input(arrived = true, parkingLot = true)))
     }
 
     @Test

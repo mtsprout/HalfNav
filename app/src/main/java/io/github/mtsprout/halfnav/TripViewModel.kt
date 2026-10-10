@@ -6,9 +6,9 @@ import androidx.lifecycle.viewModelScope
 import io.github.mtsprout.halfnav.core.ConstructionWarning
 import io.github.mtsprout.halfnav.core.Handoff
 import io.github.mtsprout.halfnav.core.LatLng
+import io.github.mtsprout.halfnav.core.ParkingLot
 import io.github.mtsprout.halfnav.core.Place
 import io.github.mtsprout.halfnav.core.Route
-import io.github.mtsprout.halfnav.core.RoutePlanner
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +23,8 @@ data class TripPlan(
     val route: Route,
     val handoff: Handoff,
     val warnings: List<ConstructionWarning>,
+    /** The destination's own parking lot, if TomTom knows one; the route ends at its entrance. */
+    val parking: ParkingLot? = null,
 )
 
 sealed interface UiState {
@@ -43,6 +45,7 @@ data class SearchState(
 class TripViewModel(app: Application) : AndroidViewModel(app) {
     private val context get() = getApplication<Application>()
     val prefs = Prefs(app)
+    private val planner = TripPlanner(app)
 
     val settings: StateFlow<Settings> =
         prefs.settings.stateIn(viewModelScope, SharingStarted.Eagerly, Settings())
@@ -183,49 +186,28 @@ class TripViewModel(app: Application) : AndroidViewModel(app) {
             val s = prefs.settings.first()
             prefs.addRecent(place)
 
-            _state.value = UiState.Working("Finding your location…")
-            val here = runCatching { Locations.current(context) }.getOrNull() ?: _here.value
-            if (here == null && s.mode != Mode.END_MILES) {
-                _state.value = UiState.Error("Couldn't get your location. Is GPS on?", fallback = place)
-                return@launch
-            }
-            here?.let { _here.value = it }
-
-            _state.value = UiState.Working("Checking the route…")
-            val route = try {
-                here?.let { TomTomClient.route(it, place.latLng) }
-            } catch (e: Exception) {
-                if (s.mode != Mode.END_MILES) {
-                    _state.value = UiState.Error(
-                        "Couldn't check the route or construction: ${e.message ?: "network error"}",
-                        fallback = place,
-                    )
-                    return@launch
+            val outcome = planner.plan(place, s, _here.value) { _state.value = UiState.Working(it) }
+            when (outcome) {
+                is TripPlanner.Outcome.Failed ->
+                    _state.value = UiState.Error(outcome.message, outcome.fallback)
+                is TripPlanner.Outcome.EndMode -> {
+                    outcome.here?.let { _here.value = it }
+                    clearSelection()
+                    startDrive(outcome.trip)
                 }
-                null
-            }
-
-            if (s.mode == Mode.END_MILES) {
-                clearSelection()
-                if (route != null) {
-                    startDrive(DriveTrip.endMode(place, route, s.endMiles))
-                } else {
+                is TripPlanner.Outcome.WatchOnly -> {
+                    clearSelection()
                     // No route (no signal?): still watch the distance and hand off to Google Maps when close.
-                    ArrivalWatchService.start(context, place, s.endMiles)
+                    ArrivalWatchService.start(context, outcome.place, outcome.miles)
                 }
-                return@launch
-            }
-
-            val r = route ?: return@launch
-            val handoff = when (s.mode) {
-                Mode.START_MILES -> RoutePlanner.pointAtDistance(r, s.startMiles.toDouble())
-                else -> RoutePlanner.interstateHandoff(r)
-            }
-            val plan = TripPlan(place, r, handoff, RoutePlanner.construction(r, handoff))
-            if (s.warnConstruction) {
-                _state.value = UiState.Review(plan)
-            } else {
-                guidePartWay(plan)
+                is TripPlanner.Outcome.Ready -> {
+                    outcome.here?.let { _here.value = it }
+                    if (s.warnConstruction) {
+                        _state.value = UiState.Review(outcome.plan)
+                    } else {
+                        guidePartWay(outcome.plan)
+                    }
+                }
             }
         }
     }

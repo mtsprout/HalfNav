@@ -13,16 +13,24 @@ struct DriveTrip {
     var warnings: [ConstructionWarning]
     /// End mode: guidance starts within this many miles of the destination.
     var watchMiles: Double?
+    /// The destination's own parking lot; the route goes to its entrance.
+    var parking: ParkingLot? = nil
+
+    /// Where routes (and reroutes) go.
+    var routeTarget: LatLng { parking?.entrance ?? destination.latLng }
+
+    /// Arriving means turning into a parking lot: the destination's, or a lot you picked.
+    var endsAtParking: Bool { parking != nil || Parking.shared.isParking(place: destination) }
 
     /// A stand-in handoff at the destination, for listing construction along the whole route.
     static func wholeRouteHandoff(_ route: Route) -> Handoff {
         Handoff(point: route.points.last!, offsetMeters: route.lengthMeters, label: "", reachesDestination: true)
     }
 
-    static func endMode(_ destination: Place, _ route: Route, watchMiles: Double) -> DriveTrip {
+    static func endMode(_ destination: Place, _ route: Route, watchMiles: Double, parking: ParkingLot?) -> DriveTrip {
         DriveTrip(destination: destination, route: route, mode: .endMiles, handoff: nil,
                   warnings: RoutePlanner.shared.construction(route: route, handoff: wholeRouteHandoff(route)),
-                  watchMiles: watchMiles)
+                  watchMiles: watchMiles, parking: parking)
     }
 }
 
@@ -237,7 +245,8 @@ final class DriveSession {
             destinationName: trip.destination.name,
             guidanceStarts: starts,
             guidanceEnds: ends,
-            routeVersion: routeVersion
+            routeVersion: routeVersion,
+            parkingLot: trip.endsAtParking
         )
         let said = prompts.update(v: input)
         if !said.isEmpty && !settings.voiceMuted { voice.speak(said) }
@@ -254,7 +263,7 @@ final class DriveSession {
         }
         Task { @MainActor in
             defer { rerouting = false; progress.rerouting = false }
-            guard let route = try? await TomTom.route(from: from, to: trip.destination.latLng),
+            guard let route = try? await TomTom.route(from: from, to: trip.routeTarget),
                   self.trip != nil else { return }
             // Keep the old handoff point if we haven't reached it and the new route still passes it.
             var handoff: Handoff?

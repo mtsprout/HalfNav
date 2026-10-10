@@ -148,7 +148,11 @@ private fun InstructionBanner(trip: DriveTrip, progress: DriveProgress, guided: 
             val remainingSec = progress.remainingSec(trip)
             when {
                 progress.arrived -> {
-                    Text("You've arrived", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (trip.endsAtParking) "Turn into the parking lot" else "You've arrived",
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
                     Text(trip.destination.name, fontSize = 16.sp)
                 }
                 progress.rerouting -> Row(verticalAlignment = Alignment.CenterVertically) {

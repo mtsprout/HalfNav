@@ -6,6 +6,8 @@ struct TripPlan {
     var route: Route
     var handoff: Handoff
     var warnings: [ConstructionWarning]
+    /// The destination's own parking lot, if TomTom knows one; the route ends at its entrance.
+    var parking: ParkingLot?
 }
 
 enum UiState {
@@ -156,23 +158,29 @@ final class AppModel {
             }
             let here = LatLng(lat: fix.coordinate.latitude, lng: fix.coordinate.longitude)
             state = .working("Checking the route…")
+            // A business's own lot, when TomTom knows it: drive to the lot's entrance.
+            var parking: ParkingLot?
+            if place.isBusiness && !Parking.shared.isParking(place: place) {
+                parking = try? await TomTom.parking(for: place)
+            }
             let route: Route
             do {
-                route = try await TomTom.route(from: here, to: place.latLng)
+                route = try await TomTom.route(from: here, to: parking?.entrance ?? place.latLng)
             } catch {
                 state = .error("Couldn't check the route or construction: \(error.localizedDescription)", fallback: place)
                 return
             }
             if settings.mode == .endMiles {
                 clearSelection()
-                drive.start(.endMode(place, route, watchMiles: settings.endMiles))
+                drive.start(.endMode(place, route, watchMiles: settings.endMiles, parking: parking))
                 return
             }
             let handoff = settings.mode == .startMiles
                 ? RoutePlanner.shared.pointAtDistance(route: route, miles: settings.startMiles)
                 : RoutePlanner.shared.interstateHandoff(route: route)
             let plan = TripPlan(destination: place, route: route, handoff: handoff,
-                                warnings: RoutePlanner.shared.construction(route: route, handoff: handoff))
+                                warnings: RoutePlanner.shared.construction(route: route, handoff: handoff),
+                                parking: parking)
             if settings.warnConstruction {
                 state = .review(plan)
             } else {
@@ -199,7 +207,7 @@ final class AppModel {
 
     private func startDrive(_ plan: TripPlan) {
         drive.start(DriveTrip(destination: plan.destination, route: plan.route, mode: settings.mode,
-                              handoff: plan.handoff, warnings: plan.warnings, watchMiles: nil))
+                              handoff: plan.handoff, warnings: plan.warnings, watchMiles: nil, parking: plan.parking))
         state = .idle
         selected = nil
         search = SearchState()

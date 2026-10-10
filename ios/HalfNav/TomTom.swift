@@ -49,6 +49,18 @@ enum TomTom {
         return SearchRanking.shared.nearbyFirst(places: places, here: near)
     }
 
+    /// place's own parking lot, if TomTom knows one (see Parking.lotFor).
+    static func parking(for place: Place) async throws -> ParkingLot? {
+        let p = Parking.shared
+        let body = try await get("\(base)/search/2/nearbySearch/.json?key=\(try key)&lat=\(place.latLng.lat)&lon=\(place.latLng.lng)" +
+            "&radius=\(p.SEARCH_METERS)&categorySet=\(p.CATEGORY_SET)&limit=20")
+        do {
+            return p.lotFor(destination: place, lots: try p.parse(json: body))
+        } catch {
+            throw Failure(message: kotlinMessage(error) ?? "Unexpected response from TomTom search")
+        }
+    }
+
     /// The street address at [at], or nil if TomTom has none there.
     static func address(at: LatLng) async throws -> Place? {
         let body = try await get("\(base)/search/2/reverseGeocode/\(at.lat),\(at.lng).json?key=\(try key)&language=en-US")

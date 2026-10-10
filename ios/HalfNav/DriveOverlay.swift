@@ -71,7 +71,7 @@ private struct InstructionBanner: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if progress.arrived {
-                Text("You've arrived").font(.system(size: 26, weight: .bold))
+                Text(trip.endsAtParking ? "Turn into the parking lot" : "You've arrived").font(.system(size: 26, weight: .bold))
                 Text(trip.destination.name)
             } else if progress.rerouting {
                 HStack(spacing: 12) {

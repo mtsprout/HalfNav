@@ -1,6 +1,8 @@
 package io.github.mtsprout.halfnav
 
 import io.github.mtsprout.halfnav.core.LatLng
+import io.github.mtsprout.halfnav.core.Parking
+import io.github.mtsprout.halfnav.core.ParkingLot
 import io.github.mtsprout.halfnav.core.Place
 import io.github.mtsprout.halfnav.core.Route
 import io.github.mtsprout.halfnav.core.RouteException
@@ -37,6 +39,17 @@ object TomTomClient {
         )
         return SearchRanking.nearbyFirst(places, near)
     }
+
+    /** [place]'s own parking lot, if TomTom knows one (see [Parking.lotFor]). */
+    suspend fun parkingFor(place: Place): ParkingLot? = Parking.lotFor(
+        place,
+        Parking.parse(
+            get(
+                "$BASE/search/2/nearbySearch/.json?key=${key()}&lat=${place.latLng.lat}&lon=${place.latLng.lng}" +
+                    "&radius=${Parking.SEARCH_METERS}&categorySet=${Parking.CATEGORY_SET}&limit=20"
+            )
+        ),
+    )
 
     /** The street address at [at], or null if TomTom has none there. */
     suspend fun addressAt(at: LatLng): Place? = TomTomSearchParser.parseAddress(

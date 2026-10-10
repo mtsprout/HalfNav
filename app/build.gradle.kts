@@ -106,6 +106,9 @@ dependencies {
 
     implementation("org.maplibre.gl:android-sdk:11.13.5")
 
+    implementation("androidx.car.app:app:1.4.0")
+    implementation("androidx.car.app:app-projected:1.4.0")
+
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
 }

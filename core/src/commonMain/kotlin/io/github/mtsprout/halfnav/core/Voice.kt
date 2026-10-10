@@ -103,6 +103,8 @@ data class VoiceInput(
     val guidanceEnds: String,
     /** Changes whenever the route is replaced (reroute), so instructions are announced afresh. */
     val routeVersion: Int,
+    /** The route ends at the destination's parking lot: arriving means turning into it. */
+    val parkingLot: Boolean = false,
 )
 
 /**
@@ -128,7 +130,7 @@ class VoicePrompts {
         }
 
         if (v.arrived) {
-            if (!arrivedSpoken) out += "You've arrived at ${v.destinationName}."
+            if (!arrivedSpoken) out += if (v.parkingLot) "Turn into the parking lot." else "You've arrived at ${v.destinationName}."
             arrivedSpoken = true
             wasGuided = v.guided
             return out
