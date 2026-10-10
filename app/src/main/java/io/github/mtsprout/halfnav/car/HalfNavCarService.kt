@@ -2,11 +2,9 @@ package io.github.mtsprout.halfnav.car
 
 import android.content.Intent
 import androidx.car.app.CarAppService
-import androidx.car.app.ScreenManager
 import androidx.car.app.Screen
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
-import io.github.mtsprout.halfnav.DriveService
 
 /** Entry point for Android Auto. The car host binds to this service. */
 class HalfNavCarService : CarAppService() {
@@ -18,10 +16,5 @@ class HalfNavCarService : CarAppService() {
 }
 
 class HalfNavSession : Session() {
-    override fun onCreateScreen(intent: Intent): Screen {
-        // Plugging in mid-trip: go straight to the turn banner, with Home underneath for after.
-        if (DriveService.trip.value == null) return HomeScreen(carContext)
-        carContext.getCarService(ScreenManager::class.java).push(HomeScreen(carContext))
-        return NavScreen(carContext)
-    }
+    override fun onCreateScreen(intent: Intent): Screen = HomeScreen(carContext)
 }

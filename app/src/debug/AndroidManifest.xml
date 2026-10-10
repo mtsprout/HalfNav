@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Debug builds only: lets adb start a simulated drive along the running trip. -->
+        <receiver
+            android:name=".DebugSimulateReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="io.github.mtsprout.halfnav.SIMULATE" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

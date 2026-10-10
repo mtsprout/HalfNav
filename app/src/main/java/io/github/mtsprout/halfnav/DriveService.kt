@@ -15,6 +15,7 @@ import android.location.Location
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -38,6 +39,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -68,6 +70,8 @@ class DriveService : Service() {
 
     private val callback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
+            // While a simulated drive runs (debug builds), the phone's real position is ignored.
+            if (simulation.value != null) return
             result.lastLocation?.let(::onLocation)
         }
     }
@@ -83,6 +87,7 @@ class DriveService : Service() {
                 settings = s
             }
         }
+        scope.launch { simulation.collectLatest { sim -> if (sim != null) runSimulation(sim) } }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -118,6 +123,7 @@ class DriveService : Service() {
     private fun stop() {
         fused.removeLocationUpdates(callback)
         rerouteJob?.cancel()
+        simulation.value = null
         _trip.value = null
         _progress.value = DriveProgress()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
@@ -129,6 +135,33 @@ class DriveService : Service() {
         voice?.shutdown()
         scope.cancel()
         super.onDestroy()
+    }
+
+    // --- Simulated drive (debug builds only; nothing in release can start it) ---
+
+    /** Moves along the trip's route at [sim]'s speed, once a second, as if GPS fixes were arriving. */
+    private suspend fun runSimulation(sim: Sim) {
+        var offset = _progress.value.offsetMeters + sim.jumpMeters
+        while (true) {
+            val trip = _trip.value ?: return
+            val route = trip.route
+            offset = offset.coerceAtMost(route.lengthMeters)
+            val here = route.pointAt(offset)
+            val ahead = route.pointAt((offset + 15.0).coerceAtMost(route.lengthMeters))
+            val loc = Location("simulated").apply {
+                latitude = here.lat
+                longitude = here.lng
+                speed = sim.speedMps
+                bearing = Geo.bearing(here, ahead).toFloat()
+                accuracy = 5f
+                time = System.currentTimeMillis()
+                elapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos()
+            }
+            onLocation(loc)
+            if (offset >= route.lengthMeters) return
+            delay(1000)
+            offset += sim.speedMps
+        }
     }
 
     // --- Following the route ---
@@ -349,6 +382,11 @@ class DriveService : Service() {
         private const val MIN_MOVE_METERS = 8.0
         /** Within this distance of the destination, don't reroute. */
         private const val NO_REROUTE_METERS = 300.0
+
+        /** A simulated drive request; set only by the debug build's receiver. */
+        data class Sim(val speedMps: Float, val jumpMeters: Double = 0.0)
+
+        val simulation = MutableStateFlow<Sim?>(null)
 
         private val _trip = MutableStateFlow<DriveTrip?>(null)
         val trip: StateFlow<DriveTrip?> = _trip

@@ -8,6 +8,7 @@ import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.lifecycle.lifecycleScope
+import io.github.mtsprout.halfnav.DriveService
 import io.github.mtsprout.halfnav.Prefs
 import io.github.mtsprout.halfnav.Settings
 import kotlinx.coroutines.launch
@@ -23,11 +24,21 @@ class HomeScreen(carContext: CarContext) : Screen(carContext) {
                 invalidate()
             }
         }
+        lifecycleScope.launch { DriveService.trip.collect { invalidate() } }
     }
 
     override fun onGetTemplate(): Template {
         val s = settings ?: return ListTemplate.Builder().setTitle("HalfNav").setLoading(true).build()
         val list = ItemList.Builder()
+        DriveService.trip.value?.let { trip ->
+            list.addItem(
+                Row.Builder()
+                    .setTitle("Resume trip")
+                    .addText(trip.destination.name)
+                    .setOnClickListener { screenManager.push(NavScreen(carContext)) }
+                    .build()
+            )
+        }
         list.addItem(
             Row.Builder()
                 .setTitle("Search for a place")
@@ -35,7 +46,8 @@ class HomeScreen(carContext: CarContext) : Screen(carContext) {
                 .build()
         )
         val places = listOfNotNull(s.home) + s.recent
-        places.take((carContext.listLimit() - 1).coerceAtLeast(0)).forEach { place ->
+        val used = if (DriveService.trip.value != null) 2 else 1
+        places.take((carContext.listLimit() - used).coerceAtLeast(0)).forEach { place ->
             list.addItem(placeRow(place) { screenManager.push(PlanScreen(carContext, place)) })
         }
         return ListTemplate.Builder()
