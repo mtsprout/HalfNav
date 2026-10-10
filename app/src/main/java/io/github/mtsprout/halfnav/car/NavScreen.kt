@@ -4,17 +4,17 @@ import android.util.Log
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.DateTimeWithZone
 import androidx.car.app.model.Distance
 import androidx.car.app.model.MessageTemplate
-import androidx.car.app.model.Pane
-import androidx.car.app.model.PaneTemplate
-import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.car.app.navigation.NavigationManager
 import androidx.car.app.navigation.NavigationManagerCallback
 import androidx.car.app.navigation.model.Destination
 import androidx.car.app.navigation.model.Maneuver
+import androidx.car.app.navigation.model.NavigationTemplate
+import androidx.car.app.navigation.model.RoutingInfo
 import androidx.car.app.navigation.model.Step
 import androidx.car.app.navigation.model.TravelEstimate
 import androidx.car.app.navigation.model.Trip
@@ -26,7 +26,6 @@ import io.github.mtsprout.halfnav.DriveService
 import io.github.mtsprout.halfnav.DriveTrip
 import io.github.mtsprout.halfnav.core.Geo
 import io.github.mtsprout.halfnav.formatManeuverDistance
-import io.github.mtsprout.halfnav.maneuverGlyph
 import io.github.mtsprout.halfnav.formatMiles
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -34,15 +33,14 @@ import kotlinx.coroutines.launch
 import java.util.TimeZone
 
 /**
- * Turn instruction and trip summary for the running trip, as a plain pane: the host draws a
- * NavigationTemplate's turn card only over a map, and this screen has none. The trip is still
- * reported to the host through [NavigationManager], which drives its ETA chip and side widget.
+ * The running trip: a route map ([CarMap]) with the turn card, ETA and End button the car host
+ * draws over it. The trip is also reported through [NavigationManager] for the host's ETA chip
+ * and side widget.
  */
 class NavScreen(carContext: CarContext) : Screen(carContext) {
 
     /** Everything the template shows, so it's only rebuilt when the displayed text would change. */
     private data class Ui(
-        val glyph: String,
         val cue: String,
         val road: String?,
         val maneuver: Int,
@@ -60,6 +58,7 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
     private val navigation = carContext.getCarService(NavigationManager::class.java)
     private var ui: Ui? = null
     private var navReady = false
+    private val map = CarMap(carContext)
 
     init {
         // Android Auto can refuse navigation calls (e.g. "not a navigation app"). Don't crash the
@@ -76,8 +75,16 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
             false
         }
 
+        map.attach()
+        lifecycleScope.launch {
+            // The map follows every position update; the template below only the text that changes.
+            combine(DriveService.trip, DriveService.progress) { trip, progress -> trip to progress }
+                .collect { (trip, progress) -> if (trip != null) map.update(trip, progress) }
+        }
+
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onDestroy(owner: LifecycleOwner) {
+                map.detach()
                 // The host should stop treating HalfNav as navigating once this screen is gone.
                 if (!navReady) return
                 runCatching {
@@ -111,9 +118,8 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
     private fun build(trip: DriveTrip, p: DriveProgress): Ui {
         val guided = p.guided(trip)
         val remainingSec = p.remainingSec(trip)
-        fun common(glyph: String, cue: String, road: String?, type: Int, toNext: Double, loading: Boolean): Ui =
+        fun common(cue: String, road: String?, type: Int, toNext: Double, loading: Boolean): Ui =
             Ui(
-                glyph = glyph,
                 cue = cue,
                 road = road,
                 maneuver = type,
@@ -130,12 +136,11 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
             )
         val next = p.next
         return when {
-            p.arrived -> common("◉", "You have arrived", trip.destination.name, Maneuver.TYPE_DESTINATION, 0.0, false)
-            p.rerouting -> common("↻", "Rerouting…", null, Maneuver.TYPE_STRAIGHT, 0.0, true)
-            !guided -> common("•", "You're on your own", null, Maneuver.TYPE_STRAIGHT, p.remainingMeters(trip), false)
-            next == null -> common("↑", "Continue", null, Maneuver.TYPE_STRAIGHT, p.remainingMeters(trip), false)
+            p.arrived -> common("You have arrived", trip.destination.name, Maneuver.TYPE_DESTINATION, 0.0, false)
+            p.rerouting -> common("Rerouting…", null, Maneuver.TYPE_STRAIGHT, 0.0, true)
+            !guided -> common("You're on your own", null, Maneuver.TYPE_STRAIGHT, p.remainingMeters(trip), false)
+            next == null -> common("Continue", null, Maneuver.TYPE_STRAIGHT, p.remainingMeters(trip), false)
             else -> common(
-                glyph = maneuverGlyph(next.maneuver),
                 cue = next.message ?: "Continue",
                 road = next.street ?: next.roadNumbers.firstOrNull(),
                 type = carManeuverType(next.maneuver),
@@ -146,7 +151,7 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
     }
 
     private fun stepOf(m: Ui): Step {
-        val b = Step.Builder(m.cue).setManeuver(Maneuver.Builder(m.maneuver).build())
+        val b = Step.Builder(m.cue).setManeuver(Maneuver.Builder(m.maneuver).setIcon(carManeuverIcon(m.maneuver)).build())
         m.road?.let { b.setRoad(it) }
         return b.build()
     }
@@ -174,15 +179,18 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
 
     override fun onGetTemplate(): Template {
         val m = ui ?: return MessageTemplate.Builder("Starting…").setLoading(true).build()
-        val cue = Row.Builder().setTitle(m.cue)
-        m.road?.let { cue.addText(it) }
-        val pane = Pane.Builder()
-            .addRow(cue.build())
-            .addRow(Row.Builder().setTitle("${m.remainingText} to ${m.destinationName}").build())
-            .addAction(Action.Builder().setTitle("End").setOnClickListener { endTrip() }.build())
+        val routing = RoutingInfo.Builder()
+        if (m.loading) routing.setLoading(true) else routing.setCurrentStep(stepOf(m), m.toNext)
+
+        return NavigationTemplate.Builder()
+            .setNavigationInfo(routing.build())
+            .setDestinationTravelEstimate(estimateOf(m))
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(Action.Builder().setTitle("End").setOnClickListener { endTrip() }.build())
+                    .build()
+            )
             .build()
-        val header = if (m.cue == "You have arrived" || m.loading) m.glyph else "${m.glyph}  ${m.toNextText}"
-        return PaneTemplate.Builder(pane).setTitle(header).setHeaderAction(Action.BACK).build()
     }
 
     private companion object {
