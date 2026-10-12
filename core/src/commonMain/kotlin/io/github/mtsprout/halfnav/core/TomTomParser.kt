@@ -28,12 +28,16 @@ object TomTomParser {
         val instructions = mutableListOf<Instruction>()
         route.obj("guidance")?.arr("instructions")?.forEach { e ->
             val ins = e.asObject() ?: return@forEach
+            val message = ins.str("message").ifBlank { null }
             instructions += Instruction(
                 pointIndex = ins.int("pointIndex"),
                 roadNumbers = ins.arr("roadNumbers").strings(),
                 street = ins.str("street").ifBlank { null },
                 maneuver = ins.str("maneuver").ifBlank { null },
-                message = ins.str("message").ifBlank { null },
+                message = message,
+                // TomTom sends 0 on instructions that aren't roundabouts, so 0 means none.
+                roundaboutExit = (if (ins.has("roundaboutExitNumber")) ins.int("roundaboutExitNumber") else 0)
+                    .takeIf { it > 0 } ?: Instruction.exitFromMessage(message),
             )
         }
 

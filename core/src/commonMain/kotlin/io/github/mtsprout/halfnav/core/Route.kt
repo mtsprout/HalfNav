@@ -58,7 +58,25 @@ data class Instruction(
     val maneuver: String?,
     /** Human-readable text, e.g. "Keep left at I-95 N toward New York". */
     val message: String? = null,
-)
+    /** Which exit to take at a roundabout (1 = first), when TomTom says. */
+    val roundaboutExit: Int? = null,
+) {
+    companion object {
+        private val ordinals = listOf(
+            "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth",
+        )
+        private val numeric = Regex("""\b(\d{1,2})(?:st|nd|rd|th)\s+exit""", RegexOption.IGNORE_CASE)
+        private val worded = Regex("""\b(${ordinals.joinToString("|")})\s+exit""", RegexOption.IGNORE_CASE)
+
+        /** The exit number in text like "take the 2nd exit" or "take the second exit", or null. */
+        fun exitFromMessage(message: String?): Int? {
+            if (message == null) return null
+            numeric.find(message)?.let { return it.groupValues[1].toInt() }
+            worded.find(message)?.let { return ordinals.indexOf(it.groupValues[1].lowercase()) + 1 }
+            return null
+        }
+    }
+}
 
 /** A stretch of the route TomTom flags with live traffic info (jam, road work, closure...). */
 data class TrafficSection(

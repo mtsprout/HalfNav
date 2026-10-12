@@ -54,6 +54,23 @@ class RoutePlannerTest {
     }
 
     @Test
+    fun readsRoundaboutExitFromFieldOrMessage() {
+        val json = tomTomJson(
+            instructions = """
+                {"pointIndex":10,"maneuver":"ROUNDABOUT_CROSS","roundaboutExitNumber":2,"message":"Enter the roundabout"},
+                {"pointIndex":20,"maneuver":"ROUNDABOUT_RIGHT","message":"At the roundabout, take the 3rd exit onto Main St"},
+                {"pointIndex":30,"maneuver":"ROUNDABOUT_LEFT","message":"Take the first exit"},
+                {"pointIndex":40,"maneuver":"TURN_RIGHT","roundaboutExitNumber":0,"message":"Turn right onto Oak St"}
+            """,
+        )
+        val ins = route(json).instructions
+        assertEquals(2, ins[0].roundaboutExit)
+        assertEquals(3, ins[1].roundaboutExit)
+        assertEquals(1, ins[2].roundaboutExit)
+        assertEquals(null, ins[3].roundaboutExit)
+    }
+
+    @Test
     fun handsOffJustPastInterstateEntrance() {
         val r = route()
         val h = RoutePlanner.interstateHandoff(r)
