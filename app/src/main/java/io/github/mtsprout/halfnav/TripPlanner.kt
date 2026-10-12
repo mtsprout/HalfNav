@@ -16,7 +16,7 @@ class TripPlanner(private val context: Context) {
         /** Start modes: a route and where HalfNav's guidance ends. */
         data class Ready(val plan: TripPlan, val here: LatLng?) : Outcome
 
-        /** End mode with a route: drive it, guiding only the last miles. */
+        /** A trip to drive as is: end mode (guiding only the last miles) or ETA only. */
         data class EndMode(val trip: DriveTrip, val here: LatLng?) : Outcome
 
         /** End mode without a route (no signal): just watch the distance and hand off when close. */
@@ -69,6 +69,7 @@ class TripPlanner(private val context: Context) {
         }
 
         val r = route ?: return Outcome.Failed("Couldn't find a route.", fallback = place)
+        if (settings.mode == Mode.ETA_ONLY) return Outcome.EndMode(DriveTrip.etaOnly(place, r, parking), here)
         val handoff = when (settings.mode) {
             Mode.START_MILES -> RoutePlanner.pointAtDistance(r, settings.startMiles.toDouble())
             else -> RoutePlanner.interstateHandoff(r)

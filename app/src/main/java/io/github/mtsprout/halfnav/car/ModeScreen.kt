@@ -22,6 +22,7 @@ class ModeScreen(carContext: CarContext, private val settings: Settings) : Scree
             Triple(Mode.START_INTERSTATE, "To the interstate", "Guide the way to the first highway, then you're on your own"),
             Triple(Mode.START_MILES, "First ${formatMiles(settings.startMiles.toDouble())}", "Guide the start of the trip only"),
             Triple(Mode.END_MILES, "Last ${formatMiles(settings.endMiles.toDouble())}", "Quiet until you're close, then guide to the door"),
+            Triple(Mode.ETA_ONLY, "ETA only", "No directions. The route and a big arrival time"),
         )
         val list = ItemList.Builder()
         modes.forEach { (mode, title, hint) ->

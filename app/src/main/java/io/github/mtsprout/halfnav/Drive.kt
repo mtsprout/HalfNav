@@ -44,6 +44,13 @@ data class DriveTrip(
             parking = parking,
         )
 
+        /** The whole route, never guided: only the route line and the ETA are shown. */
+        fun etaOnly(destination: Place, route: Route, parking: ParkingLot?) = DriveTrip(
+            destination, route, Mode.ETA_ONLY, handoff = null,
+            warnings = RoutePlanner.construction(route, wholeRouteHandoff(route)),
+            parking = parking,
+        )
+
         /** A stand-in handoff at the destination, for listing construction along the whole route. */
         fun wholeRouteHandoff(route: Route) = Handoff(route.points.last(), route.lengthMeters, "", true)
     }

@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Properties
 
 plugins {
@@ -11,6 +13,18 @@ val localProps = Properties().apply {
     if (f.exists()) f.inputStream().use { load(it) }
 }
 
+/** Short commit hash, with "+" when there are uncommitted changes; "unknown" outside a git checkout. */
+fun gitRevision(): String = try {
+    fun git(vararg args: String) = ProcessBuilder("git", *args).directory(rootDir).redirectErrorStream(true).start()
+        .let { p -> p.inputStream.bufferedReader().readText().trim().also { p.waitFor() } }
+    val rev = git("rev-parse", "--short", "HEAD")
+    // Tracked files only, so stray editor files don't count.
+    val dirty = git("status", "--porcelain", "--untracked-files=no").isNotEmpty()
+    if (rev.isEmpty() || rev.contains(" ")) "unknown" else rev + if (dirty) "+" else ""
+} catch (e: Exception) {
+    "unknown"
+}
+
 android {
     namespace = "io.github.mtsprout.halfnav"
     compileSdk = 35
@@ -22,6 +36,9 @@ android {
         versionCode = 4
         versionName = "2.0"
         buildConfigField("String", "TOMTOM_KEY", "\"${localProps.getProperty("TOMTOM_KEY", "")}\"")
+        // Shown on the splash screen, so you can tell which build is on the phone.
+        buildConfigField("String", "BUILD_TIME", "\"${SimpleDateFormat("MMM d HH:mm").format(Date())}\"")
+        buildConfigField("String", "GIT_REV", "\"${gitRevision()}\"")
     }
 
     // Release signing key lives outside the repo; its location and password are in

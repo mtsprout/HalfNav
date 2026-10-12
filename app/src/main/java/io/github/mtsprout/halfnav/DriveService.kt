@@ -16,6 +16,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.os.SystemClock
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -278,7 +279,9 @@ class DriveService : Service() {
                 next = progress.next,
                 metersToNext = progress.metersToNext,
                 speedMps = progress.speedMps,
-                warningKey = w?.let { (it.startOffsetMeters / 10).toInt() + routeVersion * 1_000_000 },
+                // ETA only is quiet apart from arrival.
+                warningKey = w?.takeIf { trip.mode != Mode.ETA_ONLY }
+                    ?.let { (it.startOffsetMeters / 10).toInt() + routeVersion * 1_000_000 },
                 warningWhat = w?.let { if (it.kind == WorkKind.ROAD_CLOSURE) "Road closed" else "Road work" },
                 warningRoad = w?.road,
                 metersToWarning = progress.metersToWarning,
@@ -336,6 +339,7 @@ class DriveService : Service() {
             progress.arrived -> if (trip.endsAtParking) "Turn into the parking lot" else "You've arrived"
             guided && progress.next?.message != null ->
                 "${formatManeuverDistance(progress.metersToNext)} · ${progress.next.message}"
+            trip.mode == Mode.ETA_ONLY -> "${formatMinutes(progress.remainingSec(trip))} · ${formatMiles(Geo.metersToMiles(progress.remainingMeters(trip)))} to go"
             else -> "On your own · ${formatMiles(Geo.metersToMiles(progress.remainingMeters(trip)))} to go"
         }
         if (text == lastNotificationText) return
@@ -401,6 +405,13 @@ class DriveService : Service() {
         val progress: StateFlow<DriveProgress> = _progress
 
         fun start(context: Context, trip: DriveTrip) {
+            if (BuildConfig.DEBUG) {
+                // Roundabouts, and the last 3 km of instructions, to see how TomTom words them.
+                val length = trip.route.lengthMeters
+                trip.route.instructions
+                    .filter { it.maneuver?.contains("ROUNDABOUT") == true || trip.route.offsetOfPoint(it.pointIndex) > length - 3000 }
+                    .forEach { Log.d("HalfNavRoute", "at ${trip.route.offsetOfPoint(it.pointIndex).toInt()} m of ${length.toInt()} m: $it") }
+            }
             _trip.value = trip
             _progress.value = DriveProgress()
             // A fresh service instance per trip keeps voice and reroute state from leaking between trips.

@@ -14,13 +14,22 @@ import io.github.mtsprout.halfnav.core.Geo
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** Maps a TomTom maneuver code to the car host's maneuver type. */
-fun carManeuverType(maneuver: String?): Int {
+/**
+ * Maps a TomTom maneuver code to the car host's maneuver type. [roundaboutExit] is which exit to
+ * take (1 = first); the host needs it to show a roundabout, so without it a roundabout shows as
+ * straight ahead and the cue text says what to do.
+ */
+fun carManeuverType(maneuver: String?, roundaboutExit: Int? = null): Int {
     val m = maneuver ?: return Maneuver.TYPE_STRAIGHT
     return when {
         m == "ARRIVE_LEFT" -> Maneuver.TYPE_DESTINATION_LEFT
         m == "ARRIVE_RIGHT" -> Maneuver.TYPE_DESTINATION_RIGHT
         m.startsWith("ARRIVE") -> Maneuver.TYPE_DESTINATION
+        // Before the LEFT/RIGHT checks below, which would turn "ROUNDABOUT_LEFT" into a plain turn.
+        // Counter-clockwise is how roundabouts run where you drive on the right.
+        m.contains("ROUNDABOUT") ->
+            if (roundaboutExit != null && roundaboutExit > 0) Maneuver.TYPE_ROUNDABOUT_ENTER_AND_EXIT_CCW
+            else Maneuver.TYPE_STRAIGHT
         m == "DEPART" -> Maneuver.TYPE_DEPART
         m.contains("UTURN") -> Maneuver.TYPE_U_TURN_LEFT
         m.contains("FERRY") -> Maneuver.TYPE_FERRY_BOAT
@@ -37,7 +46,6 @@ fun carManeuverType(maneuver: String?): Int {
         m == "TURN_RIGHT" -> Maneuver.TYPE_TURN_NORMAL_RIGHT
         m.contains("LEFT") -> Maneuver.TYPE_TURN_SLIGHT_LEFT
         m.contains("RIGHT") -> Maneuver.TYPE_TURN_SLIGHT_RIGHT
-        // Roundabouts need an exit number TomTom's code doesn't carry; the cue text says which exit.
         else -> Maneuver.TYPE_STRAIGHT
     }
 }
@@ -55,13 +63,17 @@ fun carDistance(meters: Double): Distance {
     }
 }
 
-private val iconCache = HashMap<Int, CarIcon>()
+private val iconCache = HashMap<String, CarIcon>()
 
 /**
  * A simple arrow image for a maneuver type. The car host draws no icons of its own, so the turn
  * card needs one from the app. White on transparent; the host tints it to suit its theme.
+ * [roundaboutExit] is the exit number drawn on a roundabout icon, and [exitAngleDegrees] the
+ * direction you leave in relative to the way you came in (clockwise, so right is positive), as
+ * measured from the route. Without it the arrow is a guess from the exit number.
  */
-fun carManeuverIcon(type: Int): CarIcon = iconCache.getOrPut(type) {
+fun carManeuverIcon(type: Int, roundaboutExit: Int = 0, exitAngleDegrees: Int? = null): CarIcon =
+    iconCache.getOrPut("$type/$roundaboutExit/${exitAngleDegrees ?: "-"}") {
     val size = 160
     val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val c = Canvas(bmp)
@@ -91,6 +103,37 @@ fun carManeuverIcon(type: Int): CarIcon = iconCache.getOrPut(type) {
             c.drawCircle(size / 2f, size / 2f - 8f, 40f, stroke)
             c.drawCircle(size / 2f, size / 2f - 8f, 14f, fill)
         }
+        Maneuver.TYPE_ROUNDABOUT_ENTER_AND_EXIT_CCW -> {
+            // A ring with the road coming in from below, an arrow leaving at the exit, and the
+            // exit number in the middle. The arrow points the way the route actually leaves; a
+            // roundabout can have any number of legs, so the number alone doesn't say. Not
+            // quite back the way you came, which would sit on top of the entry road.
+            val cx = size / 2f
+            val cy = 76f
+            val ring = 34f
+            c.drawCircle(cx, cy, ring, stroke)
+            c.drawLine(cx, 150f, cx, cy + ring, stroke)
+            val exitAngle = exitAngleDegrees?.toFloat()?.coerceIn(-150f, 150f) ?: when (roundaboutExit) {
+                1 -> 90f
+                2 -> 0f
+                3 -> -90f
+                else -> 150f
+            }
+            val rad = Math.toRadians(exitAngle.toDouble())
+            val sx = cx + (ring * sin(rad)).toFloat()
+            val sy = cy - (ring * cos(rad)).toFloat()
+            val ex = cx + ((ring + 34f) * sin(rad)).toFloat()
+            val ey = cy - ((ring + 34f) * cos(rad)).toFloat()
+            c.drawLine(sx, sy, ex, ey, stroke)
+            arrowHead(c, fill, ex, ey, exitAngle)
+            val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textSize = 38f
+                textAlign = Paint.Align.CENTER
+                isFakeBoldText = true
+            }
+            c.drawText(roundaboutExit.coerceAtLeast(1).toString(), cx, cy + 13f, text)
+        }
         Maneuver.TYPE_U_TURN_LEFT, Maneuver.TYPE_U_TURN_RIGHT -> {
             val p = Path().apply {
                 moveTo(112f, 140f)
@@ -118,6 +161,23 @@ fun carManeuverIcon(type: Int): CarIcon = iconCache.getOrPut(type) {
             arrowHead(c, fill, endX, endY, angle)
         }
     }
+    CarIcon.Builder(IconCompat.createWithBitmap(bmp)).build()
+}
+
+/** A clock face, for the ETA-only card. White on transparent like the maneuver icons. */
+fun carClockIcon(): CarIcon = iconCache.getOrPut("clock") {
+    val size = 160
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val c = Canvas(bmp)
+    val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 14f
+        strokeCap = Paint.Cap.ROUND
+    }
+    c.drawCircle(80f, 80f, 56f, stroke)
+    c.drawLine(80f, 80f, 80f, 44f, stroke)
+    c.drawLine(80f, 80f, 106f, 94f, stroke)
     CarIcon.Builder(IconCompat.createWithBitmap(bmp)).build()
 }
 

@@ -13,6 +13,9 @@ import androidx.car.app.SurfaceContainer
 import io.github.mtsprout.halfnav.DriveProgress
 import io.github.mtsprout.halfnav.DriveTrip
 import io.github.mtsprout.halfnav.Mode
+import io.github.mtsprout.halfnav.arrivalTime
+import io.github.mtsprout.halfnav.formatMinutes
+import io.github.mtsprout.halfnav.formatMiles
 import io.github.mtsprout.halfnav.core.Geo
 import io.github.mtsprout.halfnav.core.LatLng
 import io.github.mtsprout.halfnav.core.SunTimes
@@ -197,6 +200,39 @@ class CarMap(private val carContext: CarContext) : SurfaceCallback {
         }
 
         vehicle(canvas, cx, cy)
+        if (trip.mode == Mode.ETA_ONLY) bigEta(canvas, area, trip, p, dark)
+    }
+
+    /** ETA-only trips: the arrival time, huge, over the top of the map, with time and distance left. */
+    private fun bigEta(canvas: Canvas, area: Rect, trip: DriveTrip, p: DriveProgress, dark: Boolean) {
+        val sec = p.remainingSec(trip)
+        val time = "ETA - ${arrivalTime(sec)}"
+        val detail = "${formatMinutes(sec)} · ${formatMiles(Geo.metersToMiles(p.remainingMeters(trip)))} to go"
+        val textColor = if (dark) 0xFFFFFFFF.toInt() else 0xFF111111.toInt()
+
+        val big = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = textColor
+            textSize = 72f * density
+            isFakeBoldText = true
+            textAlign = Paint.Align.CENTER
+        }
+        val small = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = textColor
+            textSize = 22f * density
+            textAlign = Paint.Align.CENTER
+        }
+        // Shrink to fit if the screen is narrow.
+        val maxWidth = area.width() * 0.8f
+        if (big.measureText(time) > maxWidth) big.textSize *= maxWidth / big.measureText(time)
+
+        val panelW = maxOf(big.measureText(time), small.measureText(detail)) + 40f * density
+        val panelH = big.textSize + small.textSize + 36f * density
+        val left = area.exactCenterX() - panelW / 2
+        val top = area.top + 12f * density
+        fill.color = if (dark) 0xE6202124.toInt() else 0xE6FFFFFF.toInt()
+        canvas.drawRoundRect(left, top, left + panelW, top + panelH, 20f * density, 20f * density, fill)
+        canvas.drawText(time, area.exactCenterX(), top + 12f * density + big.textSize * 0.82f, big)
+        canvas.drawText(detail, area.exactCenterX(), top + panelH - 14f * density, small)
     }
 
     private fun drawRun(canvas: Canvas, path: Path, kind: Int, width: Float, casing: Int, dark: Boolean) {
@@ -274,6 +310,8 @@ class CarMap(private val carContext: CarContext) : SurfaceCallback {
     /** Offsets along the route where HalfNav guides, or null if it never does. */
     private fun guidedRange(trip: DriveTrip): ClosedFloatingPointRange<Double>? {
         val route = trip.route
+        // ETA only draws the whole route solid: the line is the point, not the guidance.
+        if (trip.mode == Mode.ETA_ONLY) return 0.0..route.lengthMeters
         if (trip.mode == Mode.END_MILES) {
             val radius = (trip.watchMiles ?: return null) * Geo.METERS_PER_MILE
             val dest = trip.destination.latLng

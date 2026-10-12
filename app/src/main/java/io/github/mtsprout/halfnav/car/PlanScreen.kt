@@ -104,7 +104,10 @@ class PlanScreen(carContext: CarContext, private val place: Place) : Screen(carC
             trip = endTrip ?: return MessageTemplate.Builder("Nothing to start.").setTitle(place.name).build()
             pane.addRow(
                 Row.Builder()
-                    .setTitle("Quiet until within ${formatMiles((trip.watchMiles ?: 0f).toDouble())}")
+                    .setTitle(
+                        if (trip.mode == Mode.ETA_ONLY) "ETA only, no directions"
+                        else "Quiet until within ${formatMiles((trip.watchMiles ?: 0f).toDouble())}"
+                    )
                     .build()
             )
         }

@@ -431,6 +431,7 @@ private fun updateTripLayers(s: Style, content: MapContent) {
         val from = content.progress?.offsetMeters ?: 0.0
         val h = drive.handoff
         when {
+            drive.mode == Mode.ETA_ONLY -> guided = route.slice(from, route.lengthMeters)
             drive.mode == Mode.END_MILES -> unguided = route.slice(from, route.lengthMeters)
             h == null -> unguided = route.slice(from, route.lengthMeters)
             h.reachesDestination -> guided = route.slice(from, route.lengthMeters)

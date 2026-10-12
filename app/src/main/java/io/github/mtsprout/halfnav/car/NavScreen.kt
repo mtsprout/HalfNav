@@ -21,16 +21,22 @@ import androidx.car.app.navigation.model.Trip
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import io.github.mtsprout.halfnav.BuildConfig
 import io.github.mtsprout.halfnav.DriveProgress
 import io.github.mtsprout.halfnav.DriveService
 import io.github.mtsprout.halfnav.DriveTrip
 import io.github.mtsprout.halfnav.core.Geo
+import io.github.mtsprout.halfnav.core.Instruction
+import io.github.mtsprout.halfnav.Mode
+import io.github.mtsprout.halfnav.arrivalTime
 import io.github.mtsprout.halfnav.formatManeuverDistance
 import io.github.mtsprout.halfnav.formatMiles
+import io.github.mtsprout.halfnav.formatMinutes
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.util.TimeZone
+import kotlin.math.roundToInt
 
 /**
  * The running trip: a route map ([CarMap]) with the turn card, ETA and End button the car host
@@ -44,6 +50,12 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
         val cue: String,
         val road: String?,
         val maneuver: Int,
+        /** Exit to take at a roundabout; 0 when this isn't one. */
+        val roundaboutExit: Int,
+        /** Which way that exit leaves, measured from the route: degrees clockwise, 0 = straight on. */
+        val roundaboutAngle: Int?,
+        /** ETA-only trip: the card shows the arrival time with a clock instead of a maneuver. */
+        val etaOnly: Boolean,
         val toNext: Distance,
         val loading: Boolean,
         val remaining: Distance,
@@ -118,11 +130,17 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
     private fun build(trip: DriveTrip, p: DriveProgress): Ui {
         val guided = p.guided(trip)
         val remainingSec = p.remainingSec(trip)
-        fun common(cue: String, road: String?, type: Int, toNext: Double, loading: Boolean): Ui =
+        fun common(
+            cue: String, road: String?, type: Int, toNext: Double, loading: Boolean,
+            exit: Int = 0, exitAngle: Int? = null, etaOnly: Boolean = false,
+        ): Ui =
             Ui(
                 cue = cue,
                 road = road,
                 maneuver = type,
+                roundaboutExit = exit,
+                roundaboutAngle = exitAngle,
+                etaOnly = etaOnly,
                 toNext = carDistance(toNext),
                 loading = loading,
                 remaining = carDistance(p.remainingMeters(trip)),
@@ -138,20 +156,55 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
         return when {
             p.arrived -> common("You have arrived", trip.destination.name, Maneuver.TYPE_DESTINATION, 0.0, false)
             p.rerouting -> common("Rerouting…", null, Maneuver.TYPE_STRAIGHT, 0.0, true)
+            trip.mode == Mode.ETA_ONLY -> common(
+                cue = "ETA - ${arrivalTime(remainingSec)}",
+                road = "${formatMinutes(remainingSec)} · ${formatMiles(Geo.metersToMiles(p.remainingMeters(trip)))}",
+                type = Maneuver.TYPE_STRAIGHT,
+                toNext = p.remainingMeters(trip),
+                loading = false,
+                etaOnly = true,
+            )
             !guided -> common("You're on your own", null, Maneuver.TYPE_STRAIGHT, p.remainingMeters(trip), false)
             next == null -> common("Continue", null, Maneuver.TYPE_STRAIGHT, p.remainingMeters(trip), false)
             else -> common(
                 cue = next.message ?: "Continue",
                 road = next.street ?: next.roadNumbers.firstOrNull(),
-                type = carManeuverType(next.maneuver),
+                type = carManeuverType(next.maneuver, next.roundaboutExit),
                 toNext = p.metersToNext,
                 loading = false,
+                exit = next.roundaboutExit ?: 0,
+                exitAngle = roundaboutExitAngle(trip, next),
             )
         }
     }
 
+    /**
+     * Which way the route leaves a roundabout, in degrees clockwise from the way it came in (right
+     * is positive), or null if it can't be measured. TomTom follows a roundabout instruction with
+     * a "take the exit" one where the route leaves; comparing the road's direction a little before
+     * the entry with a little after the exit gives the real turn, however many legs it has.
+     */
+    private fun roundaboutExitAngle(trip: DriveTrip, next: Instruction): Int? {
+        if (next.maneuver?.contains("ROUNDABOUT") != true) return null
+        val route = trip.route
+        val all = route.instructions
+        val leaving = all.getOrNull(all.indexOf(next) + 1)?.takeIf { it.maneuver == "TAKE_EXIT" } ?: return null
+        val enterAt = route.offsetOfPoint(next.pointIndex)
+        val leaveAt = route.offsetOfPoint(leaving.pointIndex)
+        if (leaveAt - enterAt > ROUNDABOUT_MAX_METERS) return null
+        val into = Geo.bearing(route.pointAt(enterAt - ROUNDABOUT_SAMPLE_METERS), route.pointAt(enterAt))
+        val out = Geo.bearing(route.pointAt(leaveAt), route.pointAt(leaveAt + ROUNDABOUT_SAMPLE_METERS))
+        val angle = (((out - into + 540.0) % 360.0) - 180.0).roundToInt()
+        if (BuildConfig.DEBUG) Log.d(TAG, "roundabout exit ${next.roundaboutExit}: in ${into.roundToInt()}°, out ${out.roundToInt()}°, turn $angle°")
+        return angle
+    }
+
     private fun stepOf(m: Ui): Step {
-        val b = Step.Builder(m.cue).setManeuver(Maneuver.Builder(m.maneuver).setIcon(carManeuverIcon(m.maneuver)).build())
+        val maneuver = Maneuver.Builder(m.maneuver)
+            .setIcon(if (m.etaOnly) carClockIcon() else carManeuverIcon(m.maneuver, m.roundaboutExit, m.roundaboutAngle))
+        // The host requires an exit number on a roundabout maneuver.
+        if (m.maneuver == Maneuver.TYPE_ROUNDABOUT_ENTER_AND_EXIT_CCW) maneuver.setRoundaboutExitNumber(m.roundaboutExit)
+        val b = Step.Builder(m.cue).setManeuver(maneuver.build())
         m.road?.let { b.setRoad(it) }
         return b.build()
     }
@@ -195,5 +248,11 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
 
     private companion object {
         const val TAG = "HalfNavNav"
+
+        /** A roundabout's exit cue within this far of its entry belongs to it. */
+        const val ROUNDABOUT_MAX_METERS = 400.0
+
+        /** How far before the entry and after the exit to read the road's direction. */
+        const val ROUNDABOUT_SAMPLE_METERS = 30.0
     }
 }

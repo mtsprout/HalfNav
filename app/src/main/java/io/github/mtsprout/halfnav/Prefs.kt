@@ -15,7 +15,12 @@ import org.json.JSONObject
 
 private val Context.dataStore by preferencesDataStore("settings")
 
-enum class Mode { START_INTERSTATE, START_MILES, END_MILES }
+enum class Mode {
+    START_INTERSTATE, START_MILES, END_MILES,
+
+    /** Show the route and a big ETA; no turn guidance at all. */
+    ETA_ONLY,
+}
 
 /** The icon that marks you on the drive view. */
 enum class Vehicle { CAR, ARROW }

@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -72,6 +74,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -111,8 +114,10 @@ class MainActivity : ComponentActivity() {
             val settings by vm.settings.collectAsStateWithLifecycle()
             val here by vm.here.collectAsStateWithLifecycle()
             val dark = rememberDarkMode(settings.theme, here, lastDark)
+            // Saved, so turning the phone doesn't bring the splash back.
+            var splash by rememberSaveable { mutableStateOf(true) }
             HalfNavTheme(dark) {
-                App(vm, dark)
+                if (splash) VersionSplash { splash = false } else App(vm, dark)
             }
         }
     }
@@ -650,6 +655,7 @@ private fun Panel(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class) // FlowRow, so four mode chips wrap instead of running off the screen
 @Composable
 private fun PlacePanel(
     place: Place,
@@ -688,23 +694,25 @@ private fun PlacePanel(
         }
 
     Text("Help me…", style = MaterialTheme.typography.labelLarge)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         ModeChip(settings.mode, Mode.START_INTERSTATE, "To interstate", vm::setMode)
         ModeChip(settings.mode, Mode.START_MILES, "First miles", vm::setMode)
         ModeChip(settings.mode, Mode.END_MILES, "Last miles", vm::setMode)
+        ModeChip(settings.mode, Mode.ETA_ONLY, "ETA only", vm::setMode)
     }
     Text(
         when (settings.mode) {
             Mode.START_INTERSTATE -> "Google Maps guides you onto the interstate, then you're on your own."
             Mode.START_MILES -> "Google Maps guides you for the first stretch, then you're on your own."
             Mode.END_MILES -> "No guidance until you're close, then Google Maps takes you in."
+            Mode.ETA_ONLY -> "No directions. Just the route and a big arrival time."
         },
         style = MaterialTheme.typography.bodySmall,
     )
     when (settings.mode) {
         Mode.START_MILES -> MilesSlider("Guide me for the first", settings.startMiles, 1f..30f, vm::setStartMiles)
         Mode.END_MILES -> MilesSlider("Start guiding me within", settings.endMiles, 0.5f..10f, vm::setEndMiles)
-        Mode.START_INTERSTATE -> {}
+        Mode.START_INTERSTATE, Mode.ETA_ONLY -> {}
     }
     if (settings.mode == Mode.END_MILES && watchActive) {
         Text("This replaces the trip you're already watching.", style = MaterialTheme.typography.bodySmall)

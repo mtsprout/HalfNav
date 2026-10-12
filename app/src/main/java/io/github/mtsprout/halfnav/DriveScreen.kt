@@ -161,6 +161,13 @@ private fun InstructionBanner(trip: DriveTrip, progress: DriveProgress, guided: 
                     Text("Finding a new route…", Modifier.weight(1f), fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
                     EtaText(remainingSec)
                 }
+                trip.mode == Mode.ETA_ONLY && progress.position != null -> Column {
+                    Text("ETA - ${arrivalTime(remainingSec)}", fontSize = 52.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text(
+                        "${formatMinutes(remainingSec)} · ${formatMiles(Geo.metersToMiles(progress.remainingMeters(trip)))} to go",
+                        fontSize = 18.sp,
+                    )
+                }
                 progress.next != null -> Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(maneuverGlyph(progress.next.maneuver), fontSize = 44.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.width(14.dp))
@@ -203,6 +210,10 @@ private fun InstructionBanner(trip: DriveTrip, progress: DriveProgress, guided: 
     }
 }
 
+/** The arrival time in the phone's own format, e.g. "3:42 PM". */
+fun arrivalTime(remainingSec: Int): String =
+    DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(System.currentTimeMillis() + remainingSec * 1000L))
+
 /** "ETA 3:42 PM", with the digits as big as the turn distance beside them. */
 @Composable
 private fun EtaText(remainingSec: Int) {
@@ -229,6 +240,7 @@ private fun phaseText(trip: DriveTrip, progress: DriveProgress, guided: Boolean,
     val guide = if (voice == VoiceMode.HALFNAV) "HalfNav" else "Google Maps"
     val zone = formatMiles(trip.watchMiles?.toDouble() ?: 0.0)
     return when (trip.mode) {
+        Mode.ETA_ONLY -> "ETA only · no directions"
         Mode.END_MILES ->
             if (guided) (if (voice == VoiceMode.HALFNAV) "HalfNav is guiding you in" else "Google Maps is taking over")
             else "On your own · $guide guides you within $zone"
