@@ -83,6 +83,15 @@ class VoiceTest {
     }
 
     @Test
+    fun cityPromptComesEarlierAtSpeed() {
+        val v = VoicePrompts()
+        v.update(input(metersToNext = 3000.0, speed = 16f)) // start + heads-up
+        // At ~36 mph, 9 s is 144 m: 200 m is too soon, 140 m is the prompt (70 m would be too late).
+        assertEquals(emptyList(), v.update(input(metersToNext = 200.0, speed = 16f)))
+        assertEquals(listOf("Turn right onto I 35 Business South."), v.update(input(metersToNext = 140.0, speed = 16f)))
+    }
+
+    @Test
     fun laterTurnsGetHeadsUpAtTheRightDistance() {
         val v = VoicePrompts()
         v.update(input(metersToNext = 50.0)) // start + immediate turn

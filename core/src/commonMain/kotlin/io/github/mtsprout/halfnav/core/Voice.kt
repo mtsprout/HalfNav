@@ -140,8 +140,9 @@ class VoicePrompts {
         wasRerouting = v.rerouting
 
         val highway = v.speedMps >= HIGHWAY_MPS
-        val earlyAt = if (highway) EARLY_HIGHWAY_M else EARLY_CITY_M
-        val nowAt = if (highway) NOW_HIGHWAY_M else NOW_CITY_M
+        // In town the prompt distance scales with speed, so there's time to hear it and react.
+        val earlyAt = if (highway) EARLY_HIGHWAY_M else maxOf(EARLY_CITY_M, v.speedMps * EARLY_CITY_SEC.toDouble())
+        val nowAt = if (highway) NOW_HIGHWAY_M else maxOf(NOW_CITY_M, v.speedMps * NOW_CITY_SEC.toDouble())
         val next = v.next?.takeIf { !it.maneuver.orEmpty().startsWith("ARRIVE") && it.message != null }
 
         when {
@@ -194,6 +195,10 @@ class VoicePrompts {
         const val EARLY_CITY_M = 400.0
         const val NOW_HIGHWAY_M = 300.0
         const val NOW_CITY_M = 70.0
+
+        /** Seconds of driving before a turn that the city prompts aim for (never closer than the metre values). */
+        const val NOW_CITY_SEC = 9f
+        const val EARLY_CITY_SEC = 30f
         const val WARN_HIGHWAY_M = 2 * Geo.METERS_PER_MILE
         const val WARN_CITY_M = 0.5 * Geo.METERS_PER_MILE
     }
