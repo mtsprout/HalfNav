@@ -49,6 +49,33 @@ class SearchRankingTest {
     }
 
     @Test
+    fun resultsMatchingWhatWasTypedAreOrderedNearestFirst() {
+        // TomTom's order for "St Helena" near San Antonio: a place named Saint Helena Island in
+        // South Carolina came third, ahead of the nearby church group's third member.
+        val church = place("Saint Helena Catholic Church", 29.6, -98.4, "San Antonio, TX")
+        val fields = place("Saint Helena Baseball & Soccer Fields", 29.6, -98.4, "San Antonio, TX")
+        val island = place("Saint Helena Island", 32.4, -80.6, "Saint Helena Island, SC")
+        val youth = place("Saint Helenas Catholic Youth Organization", 29.6, -98.4, "San Antonio, TX")
+        val street = place("Helena Street", 29.41, -98.5, "San Antonio, TX")
+        val court = place("Saint Helena Court", 30.2, -98.0, "Driftwood, TX")
+        val california = place("Saint Helena", 38.5, -122.5, "Saint Helena, CA")
+
+        val ranked = SearchRanking.nearbyFirst(listOf(church, fields, island, youth, street, court, california), sanAntonio, "St Helena")
+        // "Helena Street" has no "saint", so it stays where TomTom put it (slot 5).
+        assertEquals(listOf(church, fields, youth, court, street, island, california).map { it.name }, ranked.map { it.name })
+    }
+
+    @Test
+    fun typedWordsMatchAsPrefixesWhileTyping() {
+        val near = place("Saint Helena Catholic Church", 29.6, -98.4, "San Antonio, TX")
+        val far = place("Saint Hilary Church", 45.86, -122.8, "Portland, OR")
+        // "Hel" starts a word in only one of them, so only that one matches and nothing moves.
+        assertEquals(listOf(far, near), SearchRanking.nearbyFirst(listOf(far, near), sanAntonio, "St Hel"))
+        // "Sa" starts a word in both, so both match and the near one moves up.
+        assertEquals(listOf(near, far), SearchRanking.nearbyFirst(listOf(far, near), sanAntonio, "Sa"))
+    }
+
+    @Test
     fun nearTiesKeepTomTomsOrder() {
         // The church and its parking lot are 0.1 mi apart; TomTom listed the church first.
         val church = place("Saints Peter & Paul Catholic Church", 29.703625, -98.128377, "New Braunfels, TX")

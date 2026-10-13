@@ -22,22 +22,43 @@ object SearchRanking {
         "mt" to "mount", "ft" to "fort",
     )
 
-    fun nearbyFirst(places: List<Place>, here: LatLng?): List<Place> {
+    fun nearbyFirst(places: List<Place>, here: LatLng?): List<Place> = nearbyFirst(places, here, "")
+
+    /**
+     * As above, and also: every result that matches all the words typed in [query] (a word being
+     * the start of one of the name's words) is a match for what was asked, so those are ordered
+     * nearest first too. Otherwise "St Helena" lists Saint Helena Island, SC, 1,063 miles away, in
+     * third place just because TomTom ranked it there, ahead of the church down the road.
+     */
+    fun nearbyFirst(places: List<Place>, here: LatLng?, query: String): List<Place> {
         if (here == null || places.size < 2) return places
         val words = places.map { nameWords(it.name) }
         val result = places.toMutableList()
+        fun sortNearest(slots: List<Int>) {
+            if (slots.size < 2) return
+            val sorted = slots.map { result[it] }
+                .sortedBy { floor(Geo.distanceMeters(here, it.latLng) / TIE_METERS) } // stable: ties keep order
+            slots.forEachIndexed { k, slot -> result[slot] = sorted[k] }
+        }
+
         val grouped = BooleanArray(places.size)
         for (i in places.indices) {
             if (grouped[i]) continue
             val slots = places.indices.filter { j -> !grouped[j] && similar(words[i], words[j]) }
             slots.forEach { grouped[it] = true }
-            if (slots.size < 2) continue
-            val sorted = slots.map { places[it] }
-                .sortedBy { floor(Geo.distanceMeters(here, it.latLng) / TIE_METERS) } // stable: ties keep order
-            slots.forEachIndexed { k, slot -> result[slot] = sorted[k] }
+            sortNearest(slots)
+        }
+
+        val typed = nameWords(query)
+        if (typed.isNotEmpty()) {
+            sortNearest(result.indices.filter { k -> matchesAll(typed, nameWords(result[k].name)) })
         }
         return result
     }
+
+    /** True when each typed word is the start of some word in the name. */
+    private fun matchesAll(typed: Set<String>, name: Set<String>): Boolean =
+        typed.all { t -> name.any { it.startsWith(t) } }
 
     /** "Sts. Peter & Paul's Church" -> {saint, peter, paul, church}. */
     internal fun nameWords(name: String): Set<String> =

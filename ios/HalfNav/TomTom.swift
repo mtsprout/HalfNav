@@ -46,7 +46,7 @@ enum TomTom {
         } catch {
             throw Failure(message: kotlinMessage(error) ?? "Unexpected response from TomTom search")
         }
-        return SearchRanking.shared.nearbyFirst(places: places, here: near)
+        return SearchRanking.shared.nearbyFirst(places: places, here: near, query: query)
     }
 
     /// place's own parking lot, if TomTom knows one (see Parking.lotFor).

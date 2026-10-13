@@ -37,7 +37,7 @@ object TomTomClient {
         val places = TomTomSearchParser.parse(
             get("$BASE/search/2/search/$q.json?key=${key()}&limit=10&typeahead=$typeahead$bias")
         )
-        return SearchRanking.nearbyFirst(places, near)
+        return SearchRanking.nearbyFirst(places, near, query)
     }
 
     /** [place]'s own parking lot, if TomTom knows one (see [Parking.lotFor]). */
