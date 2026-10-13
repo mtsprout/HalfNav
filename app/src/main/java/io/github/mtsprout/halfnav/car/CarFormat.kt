@@ -126,13 +126,16 @@ fun carManeuverIcon(type: Int, roundaboutExit: Int = 0, exitAngleDegrees: Int? =
             val ey = cy - ((ring + 34f) * cos(rad)).toFloat()
             c.drawLine(sx, sy, ex, ey, stroke)
             arrowHead(c, fill, ex, ey, exitAngle)
-            val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
-                textSize = 38f
-                textAlign = Paint.Align.CENTER
-                isFakeBoldText = true
+            // TomTom's exit number isn't a reliable count, so it's drawn only when the arrow is a guess.
+            if (exitAngleDegrees == null) {
+                val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.WHITE
+                    textSize = 38f
+                    textAlign = Paint.Align.CENTER
+                    isFakeBoldText = true
+                }
+                c.drawText(roundaboutExit.coerceAtLeast(1).toString(), cx, cy + 13f, text)
             }
-            c.drawText(roundaboutExit.coerceAtLeast(1).toString(), cx, cy + 13f, text)
         }
         Maneuver.TYPE_U_TURN_LEFT, Maneuver.TYPE_U_TURN_RIGHT -> {
             val p = Path().apply {

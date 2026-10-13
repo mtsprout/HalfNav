@@ -28,20 +28,16 @@ object TomTomParser {
         val instructions = mutableListOf<Instruction>()
         route.obj("guidance")?.arr("instructions")?.forEach { e ->
             val ins = e.asObject() ?: return@forEach
-            val maneuver = ins.str("maneuver").ifBlank { null }
-            val rawMessage = ins.str("message").ifBlank { null }
-            // TomTom sends 0 on instructions that aren't roundabouts, so 0 means none.
-            val tomTomExit = (if (ins.has("roundaboutExitNumber")) ins.int("roundaboutExitNumber") else 0)
-                .takeIf { it > 0 } ?: Instruction.exitFromMessage(rawMessage)
-            // TomTom counts the entrance road as exit 1; show and say the driver's count instead.
-            val roundabout = maneuver?.contains("ROUNDABOUT") == true
+            val message = ins.str("message").ifBlank { null }
             instructions += Instruction(
                 pointIndex = ins.int("pointIndex"),
                 roadNumbers = ins.arr("roadNumbers").strings(),
                 street = ins.str("street").ifBlank { null },
-                maneuver = maneuver,
-                message = if (roundabout) Instruction.withDriverExit(rawMessage) else rawMessage,
-                roundaboutExit = if (roundabout) tomTomExit?.let { Instruction.driverExit(it) } else tomTomExit,
+                maneuver = ins.str("maneuver").ifBlank { null },
+                message = message,
+                // TomTom sends 0 on instructions that aren't roundabouts, so 0 means none.
+                roundaboutExit = (if (ins.has("roundaboutExitNumber")) ins.int("roundaboutExitNumber") else 0)
+                    .takeIf { it > 0 } ?: Instruction.exitFromMessage(message),
             )
         }
 
@@ -65,7 +61,8 @@ object TomTomParser {
 
         val travelTime = route.obj("summary")?.int("travelTimeInSeconds") ?: 0
         if (points.size < 2) throw RouteException("Route had no geometry")
-        return Route(points, travelTime, instructions, traffic, motorways)
+        // Roundabouts get their turn measured from the route's shape and their wording from that.
+        return Roundabouts.refine(Route(points, travelTime, instructions, traffic, motorways))
     }
 
     private fun errorMessage(root: JsonObject): String? {

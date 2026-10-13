@@ -21,12 +21,10 @@ import androidx.car.app.navigation.model.Trip
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import io.github.mtsprout.halfnav.BuildConfig
 import io.github.mtsprout.halfnav.DriveProgress
 import io.github.mtsprout.halfnav.DriveService
 import io.github.mtsprout.halfnav.DriveTrip
 import io.github.mtsprout.halfnav.core.Geo
-import io.github.mtsprout.halfnav.core.Instruction
 import io.github.mtsprout.halfnav.Mode
 import io.github.mtsprout.halfnav.arrivalTime
 import io.github.mtsprout.halfnav.formatManeuverDistance
@@ -36,7 +34,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.util.TimeZone
-import kotlin.math.roundToInt
 
 /**
  * The running trip: a route map ([CarMap]) with the turn card, ETA and End button the car host
@@ -173,30 +170,10 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
                 toNext = p.metersToNext,
                 loading = false,
                 exit = next.roundaboutExit ?: 0,
-                exitAngle = roundaboutExitAngle(trip, next),
+                // Measured from the route's shape when the parser could (see Roundabouts).
+                exitAngle = next.roundaboutTurn,
             )
         }
-    }
-
-    /**
-     * Which way the route leaves a roundabout, in degrees clockwise from the way it came in (right
-     * is positive), or null if it can't be measured. TomTom follows a roundabout instruction with
-     * a "take the exit" one where the route leaves; comparing the road's direction a little before
-     * the entry with a little after the exit gives the real turn, however many legs it has.
-     */
-    private fun roundaboutExitAngle(trip: DriveTrip, next: Instruction): Int? {
-        if (next.maneuver?.contains("ROUNDABOUT") != true) return null
-        val route = trip.route
-        val all = route.instructions
-        val leaving = all.getOrNull(all.indexOf(next) + 1)?.takeIf { it.maneuver == "TAKE_EXIT" } ?: return null
-        val enterAt = route.offsetOfPoint(next.pointIndex)
-        val leaveAt = route.offsetOfPoint(leaving.pointIndex)
-        if (leaveAt - enterAt > ROUNDABOUT_MAX_METERS) return null
-        val into = Geo.bearing(route.pointAt(enterAt - ROUNDABOUT_SAMPLE_METERS), route.pointAt(enterAt))
-        val out = Geo.bearing(route.pointAt(leaveAt), route.pointAt(leaveAt + ROUNDABOUT_SAMPLE_METERS))
-        val angle = (((out - into + 540.0) % 360.0) - 180.0).roundToInt()
-        if (BuildConfig.DEBUG) Log.d(TAG, "roundabout exit ${next.roundaboutExit}: in ${into.roundToInt()}°, out ${out.roundToInt()}°, turn $angle°")
-        return angle
     }
 
     private fun stepOf(m: Ui): Step {
@@ -248,11 +225,5 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
 
     private companion object {
         const val TAG = "HalfNavNav"
-
-        /** A roundabout's exit cue within this far of its entry belongs to it. */
-        const val ROUNDABOUT_MAX_METERS = 400.0
-
-        /** How far before the entry and after the exit to read the road's direction. */
-        const val ROUNDABOUT_SAMPLE_METERS = 30.0
     }
 }
