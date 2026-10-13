@@ -104,12 +104,25 @@ import kotlin.math.roundToInt
 class MainActivity : ComponentActivity() {
     private val vm: TripViewModel by viewModels()
 
+    /** HalfNav is already open and an address was tapped in another app. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openLink(intent)
+    }
+
+    private fun openLink(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_VIEW) intent.dataString?.let(vm::openMapLink)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Start in whatever look the app last had, so the window doesn't flash light at night.
         val lastDark = ThemeCache.lastDark(this)
         if (lastDark == true) setTheme(R.style.Theme_HalfNav_Dark)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Not again after a rotation: the view model already has the place.
+        if (savedInstanceState == null) openLink(intent)
         setContent {
             val settings by vm.settings.collectAsStateWithLifecycle()
             val here by vm.here.collectAsStateWithLifecycle()
