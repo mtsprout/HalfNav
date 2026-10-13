@@ -28,16 +28,20 @@ object TomTomParser {
         val instructions = mutableListOf<Instruction>()
         route.obj("guidance")?.arr("instructions")?.forEach { e ->
             val ins = e.asObject() ?: return@forEach
-            val message = ins.str("message").ifBlank { null }
+            val maneuver = ins.str("maneuver").ifBlank { null }
+            val rawMessage = ins.str("message").ifBlank { null }
+            // TomTom sends 0 on instructions that aren't roundabouts, so 0 means none.
+            val tomTomExit = (if (ins.has("roundaboutExitNumber")) ins.int("roundaboutExitNumber") else 0)
+                .takeIf { it > 0 } ?: Instruction.exitFromMessage(rawMessage)
+            // TomTom counts the entrance road as exit 1; show and say the driver's count instead.
+            val roundabout = maneuver?.contains("ROUNDABOUT") == true
             instructions += Instruction(
                 pointIndex = ins.int("pointIndex"),
                 roadNumbers = ins.arr("roadNumbers").strings(),
                 street = ins.str("street").ifBlank { null },
-                maneuver = ins.str("maneuver").ifBlank { null },
-                message = message,
-                // TomTom sends 0 on instructions that aren't roundabouts, so 0 means none.
-                roundaboutExit = (if (ins.has("roundaboutExitNumber")) ins.int("roundaboutExitNumber") else 0)
-                    .takeIf { it > 0 } ?: Instruction.exitFromMessage(message),
+                maneuver = maneuver,
+                message = if (roundabout) Instruction.withDriverExit(rawMessage) else rawMessage,
+                roundaboutExit = if (roundabout) tomTomExit?.let { Instruction.driverExit(it) } else tomTomExit,
             )
         }
 

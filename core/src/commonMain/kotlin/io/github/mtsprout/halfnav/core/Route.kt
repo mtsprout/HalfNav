@@ -75,6 +75,36 @@ data class Instruction(
             worded.find(message)?.let { return ordinals.indexOf(it.groupValues[1].lowercase()) + 1 }
             return null
         }
+
+        /**
+         * TomTom counts the road you drive in on as exit 1, so at a four-way roundabout the right
+         * turn is "2nd", straight on "3rd" and left "4th" (checked against measured routes). Drivers
+         * count from the first exit after the entrance. This turns TomTom's number into theirs.
+         */
+        fun driverExit(tomTomExit: Int): Int = (tomTomExit - 1).coerceAtLeast(1)
+
+        /** [message] with its exit ordinal ("3rd exit", "third exit") reworded to the driver's count. */
+        fun withDriverExit(message: String?): String? {
+            if (message == null) return null
+            numeric.find(message)?.let { m ->
+                val n = driverExit(m.groupValues[1].toInt())
+                val suffix = when {
+                    n % 100 in 11..13 -> "th"
+                    n % 10 == 1 -> "st"
+                    n % 10 == 2 -> "nd"
+                    n % 10 == 3 -> "rd"
+                    else -> "th"
+                }
+                return message.replaceRange(m.range, "$n$suffix exit")
+            }
+            worded.find(message)?.let { m ->
+                val n = driverExit(ordinals.indexOf(m.groupValues[1].lowercase()) + 1)
+                val word = ordinals.getOrElse(n - 1) { "${n}th" }
+                val cased = if (m.value.first().isUpperCase()) word.replaceFirstChar { it.uppercase() } else word
+                return message.replaceRange(m.range, "$cased exit")
+            }
+            return message
+        }
     }
 }
 

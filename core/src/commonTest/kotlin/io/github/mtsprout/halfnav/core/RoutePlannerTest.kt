@@ -64,10 +64,25 @@ class RoutePlannerTest {
             """,
         )
         val ins = route(json).instructions
-        assertEquals(2, ins[0].roundaboutExit)
-        assertEquals(3, ins[1].roundaboutExit)
+        // TomTom counts the road you enter on as exit 1; the parsed number is the driver's count.
+        assertEquals(1, ins[0].roundaboutExit)
+        assertEquals(2, ins[1].roundaboutExit)
+        assertEquals("At the roundabout, take the 2nd exit onto Main St", ins[1].message)
         assertEquals(1, ins[2].roundaboutExit)
+        assertEquals("Take the first exit", ins[2].message)
         assertEquals(null, ins[3].roundaboutExit)
+        assertEquals("Turn right onto Oak St", ins[3].message)
+    }
+
+    @Test
+    fun rewordsRoundaboutExitCounts() {
+        // Measured at a real four-way roundabout: TomTom's exit 3 was straight on, 4 was left.
+        assertEquals("At the roundabout take the second exit onto E San Antonio St",
+            Instruction.withDriverExit("At the roundabout take the third exit onto E San Antonio St"))
+        assertEquals("At the roundabout take the 3rd exit", Instruction.withDriverExit("At the roundabout take the 4th exit"))
+        assertEquals("Take the Second exit", Instruction.withDriverExit("Take the Third exit"))
+        assertEquals("Take the 1st exit", Instruction.withDriverExit("Take the 2nd exit"))
+        assertEquals("Turn left", Instruction.withDriverExit("Turn left"))
     }
 
     @Test
