@@ -104,12 +104,25 @@ import kotlin.math.roundToInt
 class MainActivity : ComponentActivity() {
     private val vm: TripViewModel by viewModels()
 
+    /** HalfNav is already open and an address was tapped in another app. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openLink(intent)
+    }
+
+    private fun openLink(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_VIEW) intent.dataString?.let(vm::openMapLink)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Start in whatever look the app last had, so the window doesn't flash light at night.
         val lastDark = ThemeCache.lastDark(this)
         if (lastDark == true) setTheme(R.style.Theme_HalfNav_Dark)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Not again after a rotation: the view model already has the place.
+        if (savedInstanceState == null) openLink(intent)
         setContent {
             val settings by vm.settings.collectAsStateWithLifecycle()
             val here by vm.here.collectAsStateWithLifecycle()
@@ -160,6 +173,15 @@ private fun App(vm: TripViewModel, dark: Boolean) {
     var pendingHomeHere by remember { mutableStateOf(false) }
     var homeDialog by remember { mutableStateOf<HomeDialog?>(null) }
     val searchFocus = remember { FocusRequester() }
+
+    // A place link with several matches: focus the search box so its results show.
+    val focusRequests by vm.focusSearch.collectAsStateWithLifecycle()
+    LaunchedEffect(focusRequests) {
+        if (focusRequests > 0) {
+            kotlinx.coroutines.delay(150) // let the box finish being laid out
+            runCatching { searchFocus.requestFocus() }
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -593,7 +615,7 @@ private fun PlaceRow(place: Place, here: LatLng?, onClick: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Filled.Place, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(placeIcon(place.kind), null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Text(place.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -608,13 +630,16 @@ private fun PlaceRow(place: Place, here: LatLng?, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                place.address,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            // A city's address is just its own town line again.
+            if (place.address != place.locality) {
+                Text(
+                    place.address,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         here?.let {
             Spacer(Modifier.width(8.dp))

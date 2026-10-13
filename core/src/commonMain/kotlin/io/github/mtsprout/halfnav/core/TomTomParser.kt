@@ -61,7 +61,8 @@ object TomTomParser {
 
         val travelTime = route.obj("summary")?.int("travelTimeInSeconds") ?: 0
         if (points.size < 2) throw RouteException("Route had no geometry")
-        return Route(points, travelTime, instructions, traffic, motorways)
+        // Roundabouts get their turn measured from the route's shape and their wording from that.
+        return Roundabouts.refine(Route(points, travelTime, instructions, traffic, motorways))
     }
 
     private fun errorMessage(root: JsonObject): String? {

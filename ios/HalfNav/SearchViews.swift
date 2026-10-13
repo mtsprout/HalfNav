@@ -82,7 +82,8 @@ struct PlaceRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 16) {
-                Image(systemName: "mappin.circle.fill").font(.title2).foregroundStyle(.secondary)
+                Image(systemName: place.kind == PlaceKind.city ? "building.2.fill" : "mappin.circle.fill")
+                    .font(.title2).foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(place.name).fontWeight(.semibold).lineLimit(1)
                     // Town first, so look-alike names ("Sts Peter & Paul" in two states) can't be confused.

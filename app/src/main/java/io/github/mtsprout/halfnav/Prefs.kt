@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import io.github.mtsprout.halfnav.core.LatLng
 import io.github.mtsprout.halfnav.core.Place
+import io.github.mtsprout.halfnav.core.PlaceKind
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
@@ -110,6 +111,7 @@ class Prefs(private val context: Context) {
             .put("lng", it.latLng.lng)
             .put("category", it.category)
             .put("locality", it.locality)
+            .put("kind", it.kind?.name)
     }).toString()
 
     private fun decode(json: String?): List<Place> = runCatching {
@@ -122,6 +124,7 @@ class Prefs(private val context: Context) {
                 LatLng(o.getDouble("lat"), o.getDouble("lng")),
                 o.optString("category").ifBlank { null },
                 o.optString("locality").ifBlank { null },
+                o.optString("kind").ifBlank { null }?.let { k -> runCatching { PlaceKind.valueOf(k) }.getOrNull() },
             )
         }
     }.getOrDefault(emptyList())

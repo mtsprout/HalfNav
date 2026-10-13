@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import io.github.mtsprout.halfnav.core.ConstructionWarning
 import io.github.mtsprout.halfnav.core.Handoff
 import io.github.mtsprout.halfnav.core.LatLng
+import io.github.mtsprout.halfnav.core.MapLinks
 import io.github.mtsprout.halfnav.core.ParkingLot
 import io.github.mtsprout.halfnav.core.Place
+import io.github.mtsprout.halfnav.core.SearchRanking
 import io.github.mtsprout.halfnav.core.Route
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -119,6 +121,42 @@ class TripViewModel(app: Application) : AndroidViewModel(app) {
         _selected.value = place
         _search.value = SearchState(query = place.name)
     }
+
+    /**
+     * A place opened from another app ("Open with…" on a tapped address). A spot is looked up for
+     * its address and selected; an address or name is searched, and a street address is selected
+     * straight away since the first match is almost always the one meant.
+     */
+    fun openMapLink(uri: String) {
+        val link = MapLinks.parse(uri) ?: return
+        viewModelScope.launch {
+            clearSelection()
+            link.latLng?.let { spot ->
+                val found = runCatching { TomTomClient.addressAt(spot) }.getOrNull()
+                val place = when {
+                    found != null -> link.label?.let { found.copy(name = it) } ?: found
+                    else -> Place(link.label ?: "Dropped pin", "%.5f, %.5f".format(spot.lat, spot.lng), spot)
+                }
+                select(place)
+                return@launch
+            }
+            val q = link.query ?: return@launch
+            _search.value = SearchState(query = q)
+            runSearch(q, typeahead = false)
+            if (q.first().isDigit()) {
+                // A street address: the result that matches all of it, not the street it's on.
+                val results = _search.value.results
+                (SearchRanking.bestAddress(results, q) ?: results.firstOrNull())?.let { select(it); return@launch }
+            }
+            // Otherwise there are results to choose from: open the list.
+            _focusSearch.value += 1
+        }
+    }
+
+    private val _focusSearch = MutableStateFlow(0)
+
+    /** Goes up each time the search box should take focus so its results show (a place link with several matches). */
+    val focusSearch: StateFlow<Int> = _focusSearch
 
     fun clearSelection() {
         searchJob?.cancel()

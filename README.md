@@ -9,6 +9,7 @@ The app opens to a full-screen map. Search for any place or address, like "The A
 | **At the start: get me to the interstate** | Plans the route, finds where it gets on the first interstate (or US highway / freeway), and guides you ~0.3 mi onto it. Then you're on your own. |
 | **At the start: the first few miles** | Same, but guidance stops after the number of miles you pick. |
 | **At the end: the last few miles** | Watches your location in the background. When you're within the distance you pick, turn-by-turn guidance starts. |
+| **ETA only** (Android) | No directions at all: the route on the map and a large "ETA - 17:36" arrival time. Quiet except for "You've arrived." |
 
 Before a start-mode trip, the map draws your route:
 - **solid blue** for the part where you're guided
@@ -50,6 +51,17 @@ HalfNav speaks turn-by-turn directions itself on the guided part of the trip ("I
 - Prefer Google's voice? In Settings, set **Turn-by-turn voice** to **Google Maps**. HalfNav then hands the guided part to Google Maps, as in earlier versions.
 
 Before a start-mode trip, HalfNav also checks the **whole route** for reported road work and closures. If any fall on the part you'd drive without guidance, it warns you and offers **Let Google route the whole trip**. You can turn this off in Settings (the gear icon in the search bar).
+
+## Open with HalfNav (Android)
+
+Tap an address in Messages, Chrome or Contacts and choose **HalfNav** from "Open with." A street address opens straight to that address; a name opens the search results. It works with `geo:` and `google.navigation:` links, so other map links from apps that use them will work too.
+
+## Android Auto (Android)
+
+HalfNav appears in Android Auto's app launcher. On the car screen you can search, preview the route, choose a mode (including ETA only), and drive with a route map, a turn card, the arrival time and an **End** button. HalfNav's own voice speaks through the car speakers. Roundabouts read "At the roundabout, turn right onto Elm St," worked out from the shape of the route.
+
+- **Installing for the car:** Android Auto only lists navigation apps it can verify. Install HalfNav from Google Play (the internal testing track is enough). A sideloaded release APK works on the phone but may not be listed in the car.
+- **Trying it without a car:** turn on Android Auto's developer settings, start the **head unit server**, and connect Google's Desktop Head Unit. Debug builds also include a drive simulator for this.
 
 ## Dark mode
 

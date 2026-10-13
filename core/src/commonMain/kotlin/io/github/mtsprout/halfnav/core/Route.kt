@@ -58,8 +58,14 @@ data class Instruction(
     val maneuver: String?,
     /** Human-readable text, e.g. "Keep left at I-95 N toward New York". */
     val message: String? = null,
-    /** Which exit to take at a roundabout (1 = first), when TomTom says. */
+    /**
+     * TomTom's exit number at a roundabout, when it says. It isn't a reliable count: straight
+     * across was "3rd" at one real roundabout and "1st" at another. Use [roundaboutTurn] to say
+     * which way to go.
+     */
     val roundaboutExit: Int? = null,
+    /** Roundabouts: which way the route leaves, in degrees clockwise from the way it came in (right is positive), measured from the route's shape. */
+    val roundaboutTurn: Int? = null,
 ) {
     companion object {
         private val ordinals = listOf(

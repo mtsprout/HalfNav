@@ -5,6 +5,7 @@ import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.Row
 import io.github.mtsprout.halfnav.core.Place
+import io.github.mtsprout.halfnav.core.PlaceKind
 
 private fun Place.subtitle(): String =
     listOfNotNull(address.ifBlank { null }, locality?.takeIf { address.isBlank() || !address.contains(it) })
@@ -13,6 +14,7 @@ private fun Place.subtitle(): String =
 fun placeRow(place: Place, onClick: () -> Unit): Row {
     val b = Row.Builder().setTitle(place.name).setOnClickListener(onClick)
     place.subtitle().takeIf { it.isNotBlank() }?.let { b.addText(it) }
+    if (place.kind == PlaceKind.CITY) b.setImage(carCityIcon(), Row.IMAGE_TYPE_ICON)
     return b.build()
 }
 

@@ -70,6 +70,54 @@ class RoutePlannerTest {
         assertEquals(null, ins[3].roundaboutExit)
     }
 
+    /** A route that comes in heading north to a roundabout and leaves heading [exitDegrees]. */
+    private fun roundaboutRoute(exitDegrees: Double): Route {
+        val enter = LatLng(40.001, -75.0)
+        val metersLat = 111_320.0
+        fun away(from: LatLng, degrees: Double, meters: Double) = LatLng(
+            from.lat + meters * kotlin.math.cos(degrees * kotlin.math.PI / 180) / metersLat,
+            from.lng + meters * kotlin.math.sin(degrees * kotlin.math.PI / 180) /
+                (metersLat * kotlin.math.cos(enter.lat * kotlin.math.PI / 180)),
+        )
+        val leave = away(enter, exitDegrees, 120.0)
+        val points = listOf(LatLng(40.0, -75.0), enter, leave, away(leave, exitDegrees, 100.0))
+        val instructions = listOf(
+            Instruction(1, emptyList(), null, "ROUNDABOUT_CROSS", "At the roundabout take the third exit onto Main St", roundaboutExit = 3),
+            Instruction(2, emptyList(), "Elm St", "TAKE_EXIT", "Take the exit onto Elm St"),
+        )
+        return Roundabouts.refine(Route(points, 60, instructions, emptyList(), emptyList()))
+    }
+
+    @Test
+    fun wordsRoundaboutsFromTheShapeOfTheRoute() {
+        val straight = roundaboutRoute(0.0).instructions[0]
+        assertEquals("At the roundabout, continue straight onto Elm St", straight.message)
+        assertTrue(kotlin.math.abs(straight.roundaboutTurn!!) <= 1)
+
+        val right = roundaboutRoute(90.0).instructions[0]
+        assertEquals("At the roundabout, turn right onto Elm St", right.message)
+        assertTrue(kotlin.math.abs(right.roundaboutTurn!! - 90) <= 1)
+
+        assertEquals("At the roundabout, turn left onto Elm St", roundaboutRoute(270.0).instructions[0].message)
+        assertEquals("At the roundabout, bear right onto Elm St", roundaboutRoute(50.0).instructions[0].message)
+        assertEquals("At the roundabout, make a U-turn onto Elm St", roundaboutRoute(180.0).instructions[0].message)
+    }
+
+    @Test
+    fun readsTheRoadAheadWhenThereIsNoExitCue() {
+        // TomTom sometimes gives no separate "take the exit" cue. The road just past the circle is
+        // then the road you leave on (due north here, so straight on).
+        val json = tomTomJson(
+            instructions = """
+                {"pointIndex":10,"maneuver":"ROUNDABOUT_CROSS","roundaboutExitNumber":1,"message":"At the roundabout take the first exit onto Main St"},
+                {"pointIndex":40,"maneuver":"TURN_RIGHT","message":"Turn right onto Oak St"}
+            """,
+        )
+        val first = route(json).instructions[0]
+        assertEquals("At the roundabout, continue straight onto Main St", first.message)
+        assertTrue(kotlin.math.abs(first.roundaboutTurn!!) <= 1)
+    }
+
     @Test
     fun handsOffJustPastInterstateEntrance() {
         val r = route()

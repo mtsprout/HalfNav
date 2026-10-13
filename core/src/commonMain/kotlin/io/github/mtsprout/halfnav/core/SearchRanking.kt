@@ -22,22 +22,74 @@ object SearchRanking {
         "mt" to "mount", "ft" to "fort",
     )
 
-    fun nearbyFirst(places: List<Place>, here: LatLng?): List<Place> {
+    fun nearbyFirst(places: List<Place>, here: LatLng?): List<Place> = nearbyFirst(places, here, "")
+
+    /**
+     * As above, and also: every result that matches all the words typed in [query] (a word being
+     * the start of one of the name's words) is a match for what was asked, so those are ordered
+     * nearest first too. Otherwise "St Helena" lists Saint Helena Island, SC, 1,063 miles away, in
+     * third place just because TomTom ranked it there, ahead of the church down the road.
+     */
+    fun nearbyFirst(places: List<Place>, here: LatLng?, query: String): List<Place> {
         if (here == null || places.size < 2) return places
         val words = places.map { nameWords(it.name) }
         val result = places.toMutableList()
+        fun sortNearest(slots: List<Int>) {
+            if (slots.size < 2) return
+            val sorted = slots.map { result[it] }
+                .sortedBy { floor(Geo.distanceMeters(here, it.latLng) / TIE_METERS) } // stable: ties keep order
+            slots.forEachIndexed { k, slot -> result[slot] = sorted[k] }
+        }
+
         val grouped = BooleanArray(places.size)
         for (i in places.indices) {
             if (grouped[i]) continue
             val slots = places.indices.filter { j -> !grouped[j] && similar(words[i], words[j]) }
             slots.forEach { grouped[it] = true }
-            if (slots.size < 2) continue
-            val sorted = slots.map { places[it] }
-                .sortedBy { floor(Geo.distanceMeters(here, it.latLng) / TIE_METERS) } // stable: ties keep order
-            slots.forEachIndexed { k, slot -> result[slot] = sorted[k] }
+            sortNearest(slots)
+        }
+
+        val typed = nameWords(query)
+        if (typed.isNotEmpty()) {
+            sortNearest(result.indices.filter { k -> matchesAll(typed, nameWords(result[k].name)) })
         }
         return result
     }
+
+    private val ADDRESS_WORDS = mapOf(
+        "n" to "north", "s" to "south", "e" to "east", "w" to "west",
+        "ne" to "northeast", "nw" to "northwest", "se" to "southeast", "sw" to "southwest",
+        "st" to "street", "ave" to "avenue", "av" to "avenue", "rd" to "road", "dr" to "drive",
+        "blvd" to "boulevard", "ln" to "lane", "ct" to "court", "hwy" to "highway", "pkwy" to "parkway",
+        "pl" to "place", "cir" to "circle", "trl" to "trail", "fm" to "farm", "tx" to "texas",
+    )
+
+    private fun addressWords(text: String): Set<String> =
+        text.lowercase()
+            .map { if (it.isLetterOrDigit()) it else ' ' }
+            .joinToString("")
+            .split(' ')
+            .filter { it.isNotBlank() }
+            .map { ADDRESS_WORDS[it] ?: it }
+            .toSet()
+
+    /**
+     * The street-address result that best matches an address as written in a link, e.g.
+     * "202 S Union Ave, New Braunfels, TX 78130" picks "202 South Union Avenue" over "202 North
+     * Union Avenue" (same number, other street) and over the bare street. Null if no result is an
+     * address. On equal scores the earlier result wins.
+     */
+    fun bestAddress(places: List<Place>, query: String): Place? {
+        val wanted = addressWords(query)
+        return places.filter { it.kind == PlaceKind.ADDRESS }
+            .withIndex()
+            .maxWithOrNull(compareBy({ (_, p) -> wanted.intersect(addressWords("${p.name} ${p.address}")).size }, { (i, _) -> -i }))
+            ?.value
+    }
+
+    /** True when each typed word is the start of some word in the name. */
+    private fun matchesAll(typed: Set<String>, name: Set<String>): Boolean =
+        typed.all { t -> name.any { it.startsWith(t) } }
 
     /** "Sts. Peter & Paul's Church" -> {saint, peter, paul, church}. */
     internal fun nameWords(name: String): Set<String> =
