@@ -18,7 +18,7 @@ HalfNav is a navigation app for Android and for iPhone and iPad. It helps you dr
 
 HalfNav sends requests directly from your phone to these services. The developer does not operate any server and sees none of this data.
 
-- **TomTom** (search, routing, traffic and road-work information). Receives the text you search for, your approximate or precise location, and the start and end points of a route. TomTom's privacy policy applies: https://www.tomtom.com/privacy/
+- **TomTom** (search, routing, traffic and road-work information). Receives the text you search for, your approximate or precise location, and the start and end points of a route. TomTom handles this on HalfNav's behalf to answer your requests. TomTom says it may also use aggregated or anonymized data to improve its search and routing services, and it does not publish a fixed period for how long it keeps request data. TomTom's privacy policy applies: https://www.tomtom.com/privacy/
 - **OpenFreeMap** (map pictures). Receives requests for the map area on screen, and your device's IP address, as any website does. https://openfreemap.org/
 - **Google Play services** (finding your location on Android). Used on your phone to determine your location. It is governed by Google's privacy policy: https://policies.google.com/privacy
 - **Google Maps** (optional). If you choose to have Google Maps guide part of a trip, HalfNav passes the destination to the Google Maps app on your phone, and Google's terms then apply. HalfNav's own voice does not use Google Maps.
@@ -35,7 +35,7 @@ When your phone is connected to Android Auto, the same information that appears 
 - No accounts or sign-in.
 - No advertising, and no sale of data.
 - No analytics or crash-reporting services.
-- No sharing of your information with anyone other than the services above, which receive it only to answer your requests.
+- No sharing of your information with anyone other than the services above, which receive it to answer your requests.
 
 ## Children
 
