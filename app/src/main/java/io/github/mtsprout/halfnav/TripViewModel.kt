@@ -146,10 +146,17 @@ class TripViewModel(app: Application) : AndroidViewModel(app) {
             if (q.first().isDigit()) {
                 // A street address: the result that matches all of it, not the street it's on.
                 val results = _search.value.results
-                (SearchRanking.bestAddress(results, q) ?: results.firstOrNull())?.let { select(it) }
+                (SearchRanking.bestAddress(results, q) ?: results.firstOrNull())?.let { select(it); return@launch }
             }
+            // Otherwise there are results to choose from: open the list.
+            _focusSearch.value += 1
         }
     }
+
+    private val _focusSearch = MutableStateFlow(0)
+
+    /** Goes up each time the search box should take focus so its results show (a place link with several matches). */
+    val focusSearch: StateFlow<Int> = _focusSearch
 
     fun clearSelection() {
         searchJob?.cancel()

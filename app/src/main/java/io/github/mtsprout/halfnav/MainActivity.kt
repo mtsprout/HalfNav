@@ -174,6 +174,15 @@ private fun App(vm: TripViewModel, dark: Boolean) {
     var homeDialog by remember { mutableStateOf<HomeDialog?>(null) }
     val searchFocus = remember { FocusRequester() }
 
+    // A place link with several matches: focus the search box so its results show.
+    val focusRequests by vm.focusSearch.collectAsStateWithLifecycle()
+    LaunchedEffect(focusRequests) {
+        if (focusRequests > 0) {
+            kotlinx.coroutines.delay(150) // let the box finish being laid out
+            runCatching { searchFocus.requestFocus() }
+        }
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { granted ->
@@ -621,13 +630,16 @@ private fun PlaceRow(place: Place, here: LatLng?, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                place.address,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            // A city's address is just its own town line again.
+            if (place.address != place.locality) {
+                Text(
+                    place.address,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         here?.let {
             Spacer(Modifier.width(8.dp))
