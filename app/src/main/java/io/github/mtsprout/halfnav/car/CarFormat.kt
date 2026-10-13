@@ -167,6 +167,19 @@ fun carManeuverIcon(type: Int, roundaboutExit: Int = 0, exitAngleDegrees: Int? =
     CarIcon.Builder(IconCompat.createWithBitmap(bmp)).build()
 }
 
+/** A few buildings, for a city in a result list. Tinted by the host so it suits light and dark themes. */
+fun carCityIcon(): CarIcon = iconCache.getOrPut("city") {
+    val size = 96
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val c = Canvas(bmp)
+    c.scale(size / 24f, size / 24f)
+    c.drawPath(
+        androidx.core.graphics.PathParser.createPathFromPathData(io.github.mtsprout.halfnav.CITY_PATH),
+        Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK; style = Paint.Style.FILL },
+    )
+    CarIcon.Builder(IconCompat.createWithBitmap(bmp)).setTint(androidx.car.app.model.CarColor.DEFAULT).build()
+}
+
 /** A clock face, for the ETA-only card. White on transparent like the maneuver icons. */
 fun carClockIcon(): CarIcon = iconCache.getOrPut("clock") {
     val size = 160

@@ -40,6 +40,33 @@ class SearchTest {
     }
 
     @Test
+    fun resultsKnowTheirKind() {
+        // type / entityType as TomTom sends them for a search of "Seattle" near San Antonio.
+        val json = """
+            {"results":[
+              {"type":"Geography","entityType":"Municipality","address":{"freeformAddress":"Seattle, WA","municipality":"Seattle","countrySubdivisionCode":"WA","countryCode":"US"},
+               "position":{"lat":47.6,"lon":-122.33}},
+              {"type":"POI","poi":{"name":"Seattle Teriyaki","categories":["restaurant"]},"address":{"freeformAddress":"1 Main St, Cibolo, TX"},
+               "position":{"lat":29.56,"lon":-98.22}},
+              {"type":"Street","address":{"streetName":"Seattle Slew","freeformAddress":"Seattle Slew, Cibolo, TX"},
+               "position":{"lat":29.57,"lon":-98.2}},
+              {"type":"Address Range","address":{"streetNumber":"10","streetName":"Seattle Ave","freeformAddress":"10 Seattle Ave, Cibolo, TX"},
+               "position":{"lat":29.58,"lon":-98.21}},
+              {"type":"Geography","entityType":"CountrySubdivision","address":{"freeformAddress":"Washington"},
+               "position":{"lat":47.4,"lon":-120.5}},
+              {"type":"Geography","entityType":"PostalCodeArea","address":{"freeformAddress":"New Braunfels, TX 78130"},
+               "position":{"lat":29.7,"lon":-98.1}}
+            ]}
+        """
+        assertEquals(
+            listOf(PlaceKind.CITY, PlaceKind.BUSINESS, PlaceKind.STREET, PlaceKind.ADDRESS, PlaceKind.REGION, PlaceKind.REGION),
+            TomTomSearchParser.parse(json).map { it.kind },
+        )
+        // A place made the old way (and saved places from before kinds) has none.
+        assertEquals(null, Place("Home", "123 Main St", LatLng(29.5, -98.2), null, null).kind)
+    }
+
+    @Test
     fun localityTellsLookAlikesApart() {
         // Trimmed from a real search for "Sts Peter and Paul Catholic Church" near San Antonio, TX.
         val json = """

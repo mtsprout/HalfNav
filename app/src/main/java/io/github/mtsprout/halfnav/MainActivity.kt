@@ -606,7 +606,7 @@ private fun PlaceRow(place: Place, here: LatLng?, onClick: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Filled.Place, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(placeIcon(place.kind), null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Text(place.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)

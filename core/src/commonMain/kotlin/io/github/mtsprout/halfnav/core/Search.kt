@@ -2,6 +2,36 @@ package io.github.mtsprout.halfnav.core
 
 import kotlinx.serialization.json.JsonObject
 
+/** What a search result is, so the list can show the right icon (and later rank cities sensibly). */
+enum class PlaceKind {
+    /** A city, town or neighbourhood. */
+    CITY,
+
+    /** A county, state, country or postal-code area. */
+    REGION,
+    STREET,
+
+    /** A street address. */
+    ADDRESS,
+
+    /** A business or landmark. */
+    BUSINESS;
+
+    companion object {
+        /** From TomTom's result `type` ("Geography", "Street", "POI"...) and `entityType` ("Municipality"...). */
+        fun fromTomTom(type: String, entityType: String): PlaceKind? = when (type) {
+            "Geography" -> when (entityType) {
+                "Municipality", "MunicipalitySubdivision", "Neighbourhood" -> CITY
+                else -> REGION
+            }
+            "Street", "Cross Street" -> STREET
+            "Point Address", "Address Range" -> ADDRESS
+            "POI" -> BUSINESS
+            else -> null
+        }
+    }
+}
+
 /** A destination: a business or landmark ("The Alamo") or a plain address. */
 data class Place(
     val name: String,
@@ -10,7 +40,13 @@ data class Place(
     val category: String? = null,
     /** Town and state/region, e.g. "New Braunfels, TX", so look-alike places can be told apart. */
     val locality: String? = null,
+    /** What sort of place this is, when the search said; null for saved places from before this existed. */
+    val kind: PlaceKind? = null,
 ) {
+    // Without default arguments, so Swift (which can't see them) can still make a place the old way.
+    constructor(name: String, address: String, latLng: LatLng, category: String?, locality: String?) :
+        this(name, address, latLng, category, locality, null)
+
     /**
      * A business or public place (church, store, park) rather than a plain street address.
      * TomTom gives those a category; addresses, streets and saved Home have none.
@@ -47,7 +83,8 @@ object TomTomSearchParser {
                 ?: freeform.substringBefore(',').ifBlank { null }
                 ?: continue
             val category = poi?.arr("categories").strings().firstOrNull()?.ifBlank { null }
-            val place = Place(name, freeform, LatLng(lat, lng), category, locality(addr))
+            val kind = PlaceKind.fromTomTom(r.str("type"), r.str("entityType"))
+            val place = Place(name, freeform, LatLng(lat, lng), category, locality(addr), kind)
             val duplicate = places.any {
                 it.name.equals(place.name, ignoreCase = true) &&
                     Geo.distanceMeters(it.latLng, place.latLng) < DUPLICATE_METERS
@@ -73,7 +110,7 @@ object TomTomSearchParser {
             addr.str("streetNumber").ifBlank { null },
             addr.str("streetName").ifBlank { addr.str("street") }.ifBlank { null },
         ).joinToString(" ").ifBlank { freeform.substringBefore(',') }
-        return Place(street, freeform, at, null, locality(addr))
+        return Place(street, freeform, at, null, locality(addr), PlaceKind.ADDRESS)
     }
 
     /** "New Braunfels, TX" in the US; "Scarborough, ON, Canada" elsewhere. */
