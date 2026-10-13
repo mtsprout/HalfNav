@@ -56,6 +56,37 @@ object SearchRanking {
         return result
     }
 
+    private val ADDRESS_WORDS = mapOf(
+        "n" to "north", "s" to "south", "e" to "east", "w" to "west",
+        "ne" to "northeast", "nw" to "northwest", "se" to "southeast", "sw" to "southwest",
+        "st" to "street", "ave" to "avenue", "av" to "avenue", "rd" to "road", "dr" to "drive",
+        "blvd" to "boulevard", "ln" to "lane", "ct" to "court", "hwy" to "highway", "pkwy" to "parkway",
+        "pl" to "place", "cir" to "circle", "trl" to "trail", "fm" to "farm", "tx" to "texas",
+    )
+
+    private fun addressWords(text: String): Set<String> =
+        text.lowercase()
+            .map { if (it.isLetterOrDigit()) it else ' ' }
+            .joinToString("")
+            .split(' ')
+            .filter { it.isNotBlank() }
+            .map { ADDRESS_WORDS[it] ?: it }
+            .toSet()
+
+    /**
+     * The street-address result that best matches an address as written in a link, e.g.
+     * "202 S Union Ave, New Braunfels, TX 78130" picks "202 South Union Avenue" over "202 North
+     * Union Avenue" (same number, other street) and over the bare street. Null if no result is an
+     * address. On equal scores the earlier result wins.
+     */
+    fun bestAddress(places: List<Place>, query: String): Place? {
+        val wanted = addressWords(query)
+        return places.filter { it.kind == PlaceKind.ADDRESS }
+            .withIndex()
+            .maxWithOrNull(compareBy({ (_, p) -> wanted.intersect(addressWords("${p.name} ${p.address}")).size }, { (i, _) -> -i }))
+            ?.value
+    }
+
     /** True when each typed word is the start of some word in the name. */
     private fun matchesAll(typed: Set<String>, name: Set<String>): Boolean =
         typed.all { t -> name.any { it.startsWith(t) } }

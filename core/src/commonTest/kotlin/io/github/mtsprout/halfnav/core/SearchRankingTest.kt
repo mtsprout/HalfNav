@@ -76,6 +76,24 @@ class SearchRankingTest {
     }
 
     @Test
+    fun bestAddressMatchesTheWholeAddress() {
+        // The results TomTom gave for "202 S Union Ave, New Braunfels, TX 78130".
+        fun address(name: String, full: String, kind: PlaceKind) =
+            Place(name, full, LatLng(29.7, -98.1), null, "New Braunfels, TX", kind)
+        val north = address("202 North Union Avenue", "202 North Union Avenue, New Braunfels, TX 78130", PlaceKind.ADDRESS)
+        val street = address("South Union Avenue", "South Union Avenue, New Braunfels, TX 78130", PlaceKind.STREET)
+        val south = address("202 South Union Avenue", "202 South Union Avenue, New Braunfels, TX 78130", PlaceKind.ADDRESS)
+        val query = "202 S Union Ave, New Braunfels, TX 78130"
+
+        assertEquals(south, SearchRanking.bestAddress(listOf(north, street, south), query))
+        assertEquals(south, SearchRanking.bestAddress(listOf(south, street, north), query))
+        // Only the street came back: no address to pick.
+        assertEquals(null, SearchRanking.bestAddress(listOf(street), query))
+        // Equal scores: the earlier result.
+        assertEquals(north, SearchRanking.bestAddress(listOf(north, south), "202 Union Ave"))
+    }
+
+    @Test
     fun nearTiesKeepTomTomsOrder() {
         // The church and its parking lot are 0.1 mi apart; TomTom listed the church first.
         val church = place("Saints Peter & Paul Catholic Church", 29.703625, -98.128377, "New Braunfels, TX")

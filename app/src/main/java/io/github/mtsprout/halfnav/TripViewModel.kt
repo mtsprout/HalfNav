@@ -9,6 +9,7 @@ import io.github.mtsprout.halfnav.core.LatLng
 import io.github.mtsprout.halfnav.core.MapLinks
 import io.github.mtsprout.halfnav.core.ParkingLot
 import io.github.mtsprout.halfnav.core.Place
+import io.github.mtsprout.halfnav.core.SearchRanking
 import io.github.mtsprout.halfnav.core.Route
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -142,7 +143,11 @@ class TripViewModel(app: Application) : AndroidViewModel(app) {
             val q = link.query ?: return@launch
             _search.value = SearchState(query = q)
             runSearch(q, typeahead = false)
-            if (q.first().isDigit()) _search.value.results.firstOrNull()?.let { select(it) }
+            if (q.first().isDigit()) {
+                // A street address: the result that matches all of it, not the street it's on.
+                val results = _search.value.results
+                (SearchRanking.bestAddress(results, q) ?: results.firstOrNull())?.let { select(it) }
+            }
         }
     }
 

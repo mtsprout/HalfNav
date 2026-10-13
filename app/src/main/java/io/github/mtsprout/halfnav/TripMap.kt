@@ -204,13 +204,18 @@ fun TripMap(
             lc.cameraMode = CameraMode.NONE
             lc.renderMode = RenderMode.NORMAL
             lc.locationEngine = LocationEngineDefault.getDefaultLocationEngine(context)
-            m.moveCamera(CameraUpdateFactory.paddingTo(0.0, 0.0, 0.0, 0.0))
-            m.animateCamera(
-                CameraUpdateFactory.newCameraPosition(
-                    CameraPosition.Builder(m.cameraPosition).tilt(0.0).bearing(0.0).build()
-                ),
-                500,
-            )
+            // Level the camera after a drive. Not when it's already level: this also runs when the
+            // location first becomes ready, and restarting the camera then cancels the move to a
+            // place that was opened from another app.
+            if (m.cameraPosition.tilt > 0.5 || m.cameraPosition.bearing != 0.0) {
+                m.moveCamera(CameraUpdateFactory.paddingTo(0.0, 0.0, 0.0, 0.0))
+                m.animateCamera(
+                    CameraUpdateFactory.newCameraPosition(
+                        CameraPosition.Builder(m.cameraPosition).tilt(0.0).bearing(0.0).build()
+                    ),
+                    500,
+                )
+            }
         }
     }
 
