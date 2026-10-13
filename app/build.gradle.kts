@@ -27,12 +27,12 @@ fun gitRevision(): String = try {
 
 android {
     namespace = "io.github.mtsprout.halfnav"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "io.github.mtsprout.halfnav"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 5
         versionName = "2.1"
         buildConfigField("String", "TOMTOM_KEY", "\"${localProps.getProperty("TOMTOM_KEY", "")}\"")
@@ -62,6 +62,8 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release")
+            // Native symbol tables in the bundle, so Play can read crashes in the map engine.
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
         }
     }
 
