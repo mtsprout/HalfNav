@@ -69,7 +69,8 @@ android {
     // of one carrying all of them: arm64 for phones, 32-bit ARM for old phones, x86_64 for emulators.
     splits {
         abi {
-            isEnable = true
+            // Not for app bundles: Play makes its own per-processor downloads from the bundle.
+            isEnable = gradle.startParameter.taskNames.none { it.contains("bundle", ignoreCase = true) }
             reset()
             include("arm64-v8a", "armeabi-v7a", "x86_64")
             isUniversalApk = false
