@@ -67,6 +67,8 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
     private val navigation = carContext.getCarService(NavigationManager::class.java)
     private var ui: Ui? = null
     private var navReady = false
+    /** Seconds a faster route would save, while one is on offer. */
+    private var fasterSavedSec: Int? = null
     private val map = CarMap(carContext)
 
     init {
@@ -89,6 +91,14 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
             // The map follows every position update; the template below only the text that changes.
             combine(DriveService.trip, DriveService.progress) { trip, progress -> trip to progress }
                 .collect { (trip, progress) -> if (trip != null) map.update(trip, progress) }
+        }
+
+        lifecycleScope.launch {
+            // A quicker route was found: a button appears next to End until it lapses or is taken.
+            DriveService.offer.collect { offered ->
+                fasterSavedSec = offered?.savedSec
+                invalidate()
+            }
         }
 
         lifecycle.addObserver(object : DefaultLifecycleObserver {
@@ -217,6 +227,16 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
             .setDestinationTravelEstimate(estimateOf(m))
             .setActionStrip(
                 ActionStrip.Builder()
+                    .apply {
+                        fasterSavedSec?.let { saved ->
+                            addAction(
+                                Action.Builder()
+                                    .setTitle("Faster: -${formatMinutes(saved)}")
+                                    .setOnClickListener { DriveService.takeFasterRoute(carContext) }
+                                    .build()
+                            )
+                        }
+                    }
                     .addAction(Action.Builder().setTitle("End").setOnClickListener { endTrip() }.build())
                     .build()
             )

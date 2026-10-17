@@ -58,6 +58,8 @@ Tap an address in Messages, Chrome or Contacts and choose **HalfNav** from "Open
 
 ## Android Auto (Android)
 
+**Traffic (Android):** every 4 minutes the arrival time is re-checked with TomTom's live traffic, and delays still ahead stay in the estimate until you pass them. Except in ETA-only mode, HalfNav offers a faster route (on the phone, in the notification, on the car screen and by voice) when one saves 3 minutes or 10% of the time left.
+
 HalfNav appears in Android Auto's app launcher. On the car screen you can search, preview the route, choose a mode (including ETA only), and drive with a route map, a turn card, the arrival time and an **End** button. HalfNav's own voice speaks through the car speakers. Roundabouts read "At the roundabout, turn right onto Elm St," worked out from the shape of the route.
 
 - **Installing for the car:** Android Auto only lists navigation apps it can verify. Install HalfNav from Google Play (the internal testing track is enough). A sideloaded release APK works on the phone but may not be listed in the car.

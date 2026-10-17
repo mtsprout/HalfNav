@@ -8,13 +8,20 @@ class RouteException(message: String) : Exception(message)
 object TomTomParser {
 
     @Throws(RouteException::class) // lets Swift catch it instead of crashing
-    fun parse(json: String): Route {
+    fun parse(json: String): Route = parseAll(json).first()
+
+    /** Every route in the response: TomTom's best first, then any alternatives it was asked for. */
+    @Throws(RouteException::class)
+    fun parseAll(json: String): List<Route> {
         val root = parseJsonObject(json) ?: throw RouteException("Unexpected response from TomTom")
         errorMessage(root)?.let { throw RouteException(it) }
 
-        val routes = root.arr("routes")
-        val route = routes?.firstOrNull()?.asObject() ?: throw RouteException("No route found")
+        val routes = root.arr("routes")?.mapNotNull { it.asObject() }.orEmpty()
+        if (routes.isEmpty()) throw RouteException("No route found")
+        return routes.map(::routeOf)
+    }
 
+    private fun routeOf(route: JsonObject): Route {
         val points = mutableListOf<LatLng>()
         route.arr("legs")?.forEach { leg ->
             leg.asObject()?.arr("points")?.forEach { p ->

@@ -2,6 +2,7 @@ package io.github.mtsprout.halfnav
 
 import android.location.Location
 import io.github.mtsprout.halfnav.core.ConstructionWarning
+import io.github.mtsprout.halfnav.core.Eta
 import io.github.mtsprout.halfnav.core.Geo
 import io.github.mtsprout.halfnav.core.Handoff
 import io.github.mtsprout.halfnav.core.Instruction
@@ -11,6 +12,9 @@ import io.github.mtsprout.halfnav.core.ParkingLot
 import io.github.mtsprout.halfnav.core.Place
 import io.github.mtsprout.halfnav.core.Route
 import io.github.mtsprout.halfnav.core.RoutePlanner
+
+/** TomTom's time left for the route you're on, taken when [remainingMeters] were left. */
+data class LiveEta(val remainingMeters: Double, val seconds: Int)
 
 /** A trip shown in the drive view. */
 data class DriveTrip(
@@ -26,6 +30,8 @@ data class DriveTrip(
     val parking: ParkingLot? = null,
     /** Started from Android Auto: HalfNav's own voice speaks, since Google Maps can't take over on the car screen. */
     val inCar: Boolean = false,
+    /** The latest traffic-aware estimate for this route, from a mid-trip refresh; null until the first one. */
+    val live: LiveEta? = null,
 ) {
     /** Where routes (and reroutes) go. */
     val routeTarget: LatLng get() = parking?.entrance ?: destination.latLng
@@ -72,10 +78,16 @@ data class DriveProgress(
 ) {
     fun remainingMeters(trip: DriveTrip) = (trip.route.lengthMeters - offsetMeters).coerceAtLeast(0.0)
 
-    /** Remaining drive time, scaled from TomTom's traffic-aware estimate for the whole route. */
-    fun remainingSec(trip: DriveTrip): Int =
-        if (trip.route.lengthMeters <= 0) 0
-        else (trip.route.travelTimeSec * remainingMeters(trip) / trip.route.lengthMeters).toInt()
+    /**
+     * Remaining drive time. After a mid-trip refresh, TomTom's latest figure scaled by distance
+     * driven since; before that, the planning estimate with the traffic delays still ahead.
+     */
+    fun remainingSec(trip: DriveTrip): Int {
+        val live = trip.live
+        return if (live != null && live.remainingMeters > 0) {
+            (live.seconds * (remainingMeters(trip) / live.remainingMeters).coerceAtMost(1.0)).toInt()
+        } else Eta.remainingSec(trip.route, offsetMeters)
+    }
 
     /** True while Google Maps is (or should be) guiding this part of the trip. */
     fun guided(trip: DriveTrip): Boolean = when (trip.mode) {

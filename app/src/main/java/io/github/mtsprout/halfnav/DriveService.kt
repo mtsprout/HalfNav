@@ -22,8 +22,10 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import io.github.mtsprout.halfnav.core.Arrival
 import io.github.mtsprout.halfnav.core.ConstructionWarning
+import io.github.mtsprout.halfnav.core.Eta
 import io.github.mtsprout.halfnav.core.Geo
 import io.github.mtsprout.halfnav.core.LatLng
+import io.github.mtsprout.halfnav.core.Route
 import io.github.mtsprout.halfnav.core.RoutePlanner
 import io.github.mtsprout.halfnav.core.SpokenText
 import io.github.mtsprout.halfnav.core.VoiceInput
@@ -64,6 +66,7 @@ class DriveService : Service() {
     private var offRouteFixes = 0
     private var lastRerouteAt = 0L
     private var rerouteJob: Job? = null
+    private var refreshJob: Job? = null
     private var routeVersion = 0
     private var handedOffToGoogle = false
     /** Ends of every route this trip has used; a reroute can end on a different nearby street. */
@@ -97,12 +100,23 @@ class DriveService : Service() {
             stop()
             return START_NOT_STICKY
         }
+        if (intent?.action == ACTION_TAKE_ROUTE) {
+            takeOffer()
+            return START_NOT_STICKY
+        }
         createChannel()
         ServiceCompat.startForeground(
             this, NOTIFICATION_ID, notification("Starting…"),
             if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0,
         )
         startUpdates()
+        refreshJob?.cancel()
+        refreshJob = scope.launch {
+            while (true) {
+                delay(REFRESH_MS)
+                refreshTraffic()
+            }
+        }
         return START_NOT_STICKY
     }
 
@@ -125,7 +139,9 @@ class DriveService : Service() {
     private fun stop() {
         fused.removeLocationUpdates(callback)
         rerouteJob?.cancel()
+        refreshJob?.cancel()
         simulation.value = null
+        _offer.value = null
         _trip.value = null
         _progress.value = DriveProgress()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
@@ -246,6 +262,7 @@ class DriveService : Service() {
                 "Within ${formatMiles(trip.watchMiles?.toDouble() ?: 0.0)} of ${trip.destination.name}. Tap to navigate.",
             )
         }
+        if (_offer.value?.let { System.currentTimeMillis() > it.expiresAtMs } == true) _offer.value = null
         speakFor(trip, progress, guided)
         updateNotification(trip, progress, guided)
 
@@ -308,23 +325,7 @@ class DriveService : Service() {
         }
         rerouteJob = scope.launch {
             try {
-                val route = TomTomClient.route(from, trip.routeTarget)
-                // Keep the old handoff point if we haven't reached it and the new route still passes it.
-                val oldHandoff = trip.handoff?.takeIf { _progress.value.guided(trip) }
-                val handoff = oldHandoff?.let { h ->
-                    if (h.reachesDestination) h.copy(offsetMeters = route.lengthMeters, point = route.points.last())
-                    else route.project(h.point).takeIf { it.distanceMeters < 100 }
-                        ?.let { h.copy(point = it.point, offsetMeters = it.offsetMeters) }
-                }
-                routeVersion++
-                routeEnds += route.points.last()
-                _trip.value = trip.copy(
-                    route = route,
-                    handoff = handoff,
-                    warnings = RoutePlanner.construction(route, handoff ?: DriveTrip.wholeRouteHandoff(route)),
-                )
-                offRouteFixes = 0
-                _progress.value = DriveProgress(position = _progress.value.position)
+                adopt(TomTomClient.route(from, trip.routeTarget))
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 _progress.value = _progress.value.copy(rerouting = false)
@@ -332,10 +333,94 @@ class DriveService : Service() {
         }
     }
 
+    /** Switches the trip to [route], planned from where you are; shared by rerouting and taking a faster route. */
+    private fun adopt(route: Route) {
+        val trip = _trip.value ?: return
+        // Keep the old handoff point if we haven't reached it and the new route still passes it.
+        val oldHandoff = trip.handoff?.takeIf { _progress.value.guided(trip) }
+        val handoff = oldHandoff?.let { h ->
+            if (h.reachesDestination) h.copy(offsetMeters = route.lengthMeters, point = route.points.last())
+            else route.project(h.point).takeIf { it.distanceMeters < 100 }
+                ?.let { h.copy(point = it.point, offsetMeters = it.offsetMeters) }
+        }
+        routeVersion++
+        routeEnds += route.points.last()
+        _trip.value = trip.copy(
+            route = route,
+            handoff = handoff,
+            warnings = RoutePlanner.construction(route, handoff ?: DriveTrip.wholeRouteHandoff(route)),
+            live = null,
+        )
+        offRouteFixes = 0
+        _offer.value = null
+        _progress.value = DriveProgress(position = _progress.value.position)
+    }
+
+    // --- Traffic refresh ---
+
+    /**
+     * Asks TomTom again, from where you are now, how long the trip will take. That updates the ETA
+     * for the road you're on. Other modes also look for a faster road and offer it; ETA-only
+     * assumes you know your way, so it only re-times your road (or, if you've left every road
+     * TomTom would choose, just plans again from where you are).
+     */
+    private suspend fun refreshTraffic() {
+        val trip = _trip.value ?: return
+        val p = _progress.value
+        val here = p.position?.let { LatLng(it.latitude, it.longitude) } ?: return
+        if (p.arrived || p.rerouting || !p.onRoute || p.remainingMeters(trip) < NO_REFRESH_METERS) return
+        val routes = try {
+            TomTomClient.routesWithAlternatives(here, trip.routeTarget)
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            return // No signal or a TomTom hiccup: keep the estimate we have.
+        }
+        // A reroute or a new trip may have happened while we waited.
+        val now = _trip.value ?: return
+        if (now.route !== trip.route) return
+        val offset = _progress.value.offsetMeters
+        val current = routes.firstOrNull { Eta.sameRoad(now.route, offset, it) }
+
+        if (now.mode == Mode.ETA_ONLY) {
+            if (current != null) setLive(current) else adopt(routes.first())
+            return
+        }
+        val currentSec = current?.travelTimeSec ?: _progress.value.remainingSec(now)
+        current?.let(::setLive)
+        val faster = routes.filter { it !== current }.minByOrNull { it.travelTimeSec } ?: return
+        val saved = currentSec - faster.travelTimeSec
+        // While Google Maps is guiding, it finds its own way; only offer when we're the ones talking.
+        val googleGuiding = voiceFor(now) == VoiceMode.GOOGLE && _progress.value.guided(now)
+        val sinceDecline = System.currentTimeMillis() - declinedAtMs
+        if (saved >= maxOf(MIN_SAVING_SEC, currentSec / 10) && !googleGuiding && sinceDecline > DECLINE_QUIET_MS) {
+            _offer.value = RouteOffer(faster, saved, System.currentTimeMillis() + OFFER_MS)
+            if (!settings.voiceMuted) voice?.speak(listOf("A faster route is available, saving ${spokenMinutes(saved)}. Check the screen to take it."))
+        }
+    }
+
+    /** Records [route]'s traffic-aware time as the latest estimate for the road you're on. */
+    private fun setLive(route: Route) {
+        val trip = _trip.value ?: return
+        _trip.value = trip.copy(live = LiveEta(_progress.value.remainingMeters(trip), route.travelTimeSec))
+    }
+
+    private fun spokenMinutes(seconds: Int): String {
+        val min = ((seconds + 30) / 60).coerceAtLeast(1)
+        return if (min == 1) "1 minute" else "$min minutes"
+    }
+
+    private fun takeOffer() {
+        val offer = _offer.value ?: return
+        _offer.value = null
+        adopt(offer.route)
+    }
+
     // --- Notification ---
 
     private fun updateNotification(trip: DriveTrip, progress: DriveProgress, guided: Boolean) {
+        val offer = _offer.value
         val text = when {
+            offer != null -> "Faster route: saves ${formatMinutes(offer.savedSec)}. Tap Take it."
             progress.arrived -> if (trip.endsAtParking) "Turn into the parking lot" else "You've arrived"
             guided && progress.next?.message != null ->
                 "${formatManeuverDistance(progress.metersToNext)} · ${progress.next.message}"
@@ -355,7 +440,11 @@ class DriveService : Service() {
         val end = PendingIntent.getService(
             this, 11, Intent(this, DriveService::class.java).setAction(ACTION_STOP), PendingIntent.FLAG_IMMUTABLE,
         )
+        val take = PendingIntent.getService(
+            this, 12, Intent(this, DriveService::class.java).setAction(ACTION_TAKE_ROUTE), PendingIntent.FLAG_IMMUTABLE,
+        )
         return NotificationCompat.Builder(this, CHANNEL)
+            .apply { if (_offer.value != null) addAction(0, "Take it", take) }
             .setSmallIcon(R.drawable.ic_stat_halfnav)
             .setContentTitle("HalfNav · ${_trip.value?.destination?.name.orEmpty()}")
             .setContentText(text)
@@ -375,6 +464,35 @@ class DriveService : Service() {
 
     companion object {
         private const val ACTION_STOP = "io.github.mtsprout.halfnav.END_TRIP"
+        private const val ACTION_TAKE_ROUTE = "io.github.mtsprout.halfnav.TAKE_FASTER_ROUTE"
+
+        /** How often the ETA is re-checked with TomTom, and how little road left isn't worth checking. */
+        private const val REFRESH_MS = 4 * 60_000L
+        private const val NO_REFRESH_METERS = 2_000.0
+        /** A faster route must save at least this much, or a tenth of the time left, whichever is more. */
+        private const val MIN_SAVING_SEC = 180
+        /** An offer lapses after this long (the route was planned from where you were then). */
+        private const val OFFER_MS = 60_000L
+        /** After you say no, no new offers for this long. */
+        private const val DECLINE_QUIET_MS = 15 * 60_000L
+
+        /** A quicker route found mid-trip, waiting for the driver to take it or ignore it. */
+        data class RouteOffer(val route: Route, val savedSec: Int, val expiresAtMs: Long)
+
+        private val _offer = MutableStateFlow<RouteOffer?>(null)
+        val offer: StateFlow<RouteOffer?> = _offer
+        @Volatile private var declinedAtMs = 0L
+
+        /** Switches to the offered route. */
+        fun takeFasterRoute(context: Context) {
+            context.startService(Intent(context, DriveService::class.java).setAction(ACTION_TAKE_ROUTE))
+        }
+
+        /** Dismisses the offer; no more come for a while. */
+        fun declineFasterRoute() {
+            declinedAtMs = System.currentTimeMillis()
+            _offer.value = null
+        }
         private const val CHANNEL = "drive"
         private const val NOTIFICATION_ID = 3
 
@@ -414,12 +532,15 @@ class DriveService : Service() {
             }
             _trip.value = trip
             _progress.value = DriveProgress()
+            _offer.value = null
+            declinedAtMs = 0L
             // A fresh service instance per trip keeps voice and reroute state from leaking between trips.
             context.stopService(Intent(context, DriveService::class.java))
             ContextCompat.startForegroundService(context, Intent(context, DriveService::class.java))
         }
 
         fun stop(context: Context) {
+            _offer.value = null
             _trip.value = null
             _progress.value = DriveProgress()
             context.stopService(Intent(context, DriveService::class.java))
