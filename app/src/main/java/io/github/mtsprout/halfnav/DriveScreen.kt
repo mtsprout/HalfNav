@@ -29,6 +29,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -113,6 +116,8 @@ fun BoxScope.DriveOverlay(
             .onSizeChanged { onBottomHeight(it.height) },
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        val offer by DriveService.offer.collectAsState()
+        offer?.let { FasterRouteCard(it.savedSec) }
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SpeedBubble(progress.speedMps)
             Surface(
@@ -137,6 +142,28 @@ fun BoxScope.DriveOverlay(
             }
         }
         TripBar(trip, progress, onGoogle, onOverview, onEnd)
+    }
+}
+
+/** A quicker route was found mid-trip: take it or keep going. */
+@Composable
+private fun FasterRouteCard(savedSec: Int) {
+    val context = LocalContext.current
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 6.dp,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(start = 16.dp, top = 8.dp, end = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "Faster route: saves ${formatMinutes(savedSec)}",
+                Modifier.weight(1f),
+                fontWeight = FontWeight.SemiBold,
+            )
+            TextButton(onClick = { DriveService.declineFasterRoute() }) { Text("No thanks") }
+            Button(onClick = { DriveService.takeFasterRoute(context) }) { Text("Take it") }
+        }
     }
 }
 

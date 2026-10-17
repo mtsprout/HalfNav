@@ -28,6 +28,18 @@ object TomTomClient {
     )
 
     /**
+     * TomTom's best route from [from] to [to] and up to two alternatives, each with its own
+     * traffic-aware time. Used mid-trip to re-time the road you're on and to look for a faster one.
+     */
+    suspend fun routesWithAlternatives(from: LatLng, to: LatLng): List<Route> = TomTomParser.parseAll(
+        get(
+            "$BASE/routing/1/calculateRoute/${from.lat},${from.lng}:${to.lat},${to.lng}/json" +
+                "?key=${key()}&travelMode=car&traffic=true&routeRepresentation=polyline&maxAlternatives=2" +
+                "&instructionsType=text&language=en-US&sectionType=traffic&sectionType=motorway"
+        )
+    )
+
+    /**
      * Places and addresses matching [query] ("The Alamo", "gas station", "123 Main St"), ranked with
      * a bias toward [near]. [typeahead] tunes results for partially typed text.
      */
