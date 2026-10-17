@@ -69,7 +69,7 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
     private var navReady = false
     /** Seconds a faster route would save, while one is on offer. */
     private var fasterSavedSec: Int? = null
-    private val map = CarMap(carContext)
+    private val map = CarLiveMap(carContext)
 
     init {
         // Android Auto can refuse navigation calls (e.g. "not a navigation app"). Don't crash the
@@ -174,7 +174,10 @@ class NavScreen(carContext: CarContext) : Screen(carContext) {
             !guided -> common("You're on your own", null, Maneuver.TYPE_STRAIGHT, p.remainingMeters(trip), false)
             next == null -> common("Continue", null, Maneuver.TYPE_STRAIGHT, p.remainingMeters(trip), false)
             else -> common(
-                cue = next.message ?: "Continue",
+                // Roundabout wording is long: leave the street to the card's road line so it isn't cut off.
+                cue = (next.message ?: "Continue").let { m ->
+                    if (next.maneuver.orEmpty().contains("ROUNDABOUT") && next.street != null) m.substringBefore(" onto ") else m
+                },
                 road = next.street ?: next.roadNumbers.firstOrNull(),
                 type = carManeuverType(next.maneuver, next.roundaboutExit),
                 toNext = p.metersToNext,

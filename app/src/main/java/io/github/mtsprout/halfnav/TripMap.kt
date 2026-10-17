@@ -58,8 +58,8 @@ import kotlin.math.sin
 import org.maplibre.android.geometry.LatLng as MapLatLng
 
 /** Free OpenStreetMap-based street maps; no key needed. */
-private const val STYLE_LIGHT = "https://tiles.openfreemap.org/styles/liberty"
-private const val STYLE_DARK = "https://tiles.openfreemap.org/styles/dark"
+internal const val STYLE_LIGHT = "https://tiles.openfreemap.org/styles/liberty"
+internal const val STYLE_DARK = "https://tiles.openfreemap.org/styles/dark"
 
 private const val BLUE = 0xFF1A73E8.toInt()
 private const val BLUE_DARK = 0xFF0B4FB3.toInt()
@@ -69,7 +69,7 @@ private const val ORANGE = 0xFFF29900.toInt()
 private const val RED = 0xFFD93025.toInt()
 
 /** Camera tilt in the drive view, degrees. */
-private const val DRIVE_TILT = 55.0
+internal const val DRIVE_TILT = 55.0
 
 private object Ids {
     const val GUIDED = "halfnav-guided"
@@ -295,14 +295,21 @@ fun TripMap(
     AndroidView(factory = { mapView }, modifier = modifier)
 }
 
-private fun puckOptions(context: Context, vehicle: Vehicle): LocationComponentOptions =
+/** The vehicle marker; [scale] above 1 enlarges it (the car screen is viewed from farther away). */
+internal fun puckOptions(context: Context, vehicle: Vehicle, scale: Float = 1f): LocationComponentOptions =
     LocationComponentOptions.builder(context)
         .gpsDrawable(if (vehicle == Vehicle.CAR) R.drawable.ic_vehicle_car else R.drawable.ic_vehicle_arrow)
         .accuracyAlpha(0.12f)
+        .apply {
+            if (scale != 1f) {
+                minZoomIconScale(0.6f * scale)
+                maxZoomIconScale(1f * scale)
+            }
+        }
         .build()
 
 @SuppressLint("MissingPermission")
-private fun activateLocation(context: Context, m: MapLibreMap, s: Style, vehicle: Vehicle) {
+internal fun activateLocation(context: Context, m: MapLibreMap, s: Style, vehicle: Vehicle) {
     val lc = m.locationComponent
     lc.activateLocationComponent(
         LocationComponentActivationOptions.builder(context, s)
@@ -322,7 +329,7 @@ private fun widthByZoom(atLow: Float, atHigh: Float): Expression =
         Expression.stop(5, atLow), Expression.stop(18, atHigh),
     )
 
-private fun addTripLayers(s: Style, dark: Boolean) {
+internal fun addTripLayers(s: Style, dark: Boolean) {
     listOf(Ids.GUIDED, Ids.UNGUIDED, Ids.WORK, Ids.RADIUS, Ids.POINTS).forEach { s.addSource(GeoJsonSource(it)) }
 
     s.addLayer(
@@ -418,7 +425,7 @@ private fun addTripLayers(s: Style, dark: Boolean) {
     )
 }
 
-private fun updateTripLayers(s: Style, content: MapContent) {
+internal fun updateTripLayers(s: Style, content: MapContent) {
     val points = mutableListOf<Feature>()
     var guided: List<LatLng> = emptyList()
     var unguided: List<LatLng> = emptyList()
