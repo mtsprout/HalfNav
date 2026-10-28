@@ -33,8 +33,8 @@ android {
         applicationId = "io.github.mtsprout.halfnav"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "2.4"
+        versionCode = 15
+        versionName = "2.5"
         buildConfigField("String", "TOMTOM_KEY", "\"${localProps.getProperty("TOMTOM_KEY", "")}\"")
         // Shown on the splash screen, so you can tell which build is on the phone.
         buildConfigField("String", "BUILD_TIME", "\"${SimpleDateFormat("MMM d HH:mm").format(Date())}\"")
