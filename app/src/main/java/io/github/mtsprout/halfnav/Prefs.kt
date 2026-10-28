@@ -19,6 +19,9 @@ private val Context.dataStore by preferencesDataStore("settings")
 enum class Mode {
     START_INTERSTATE, START_MILES, END_MILES,
 
+    /** Guide the whole route, start to destination. */
+    FULL_ROUTE,
+
     /** Show the route and a big ETA; no turn guidance at all. */
     ETA_ONLY,
 }

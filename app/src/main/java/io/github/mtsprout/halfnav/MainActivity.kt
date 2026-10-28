@@ -723,6 +723,7 @@ private fun PlacePanel(
         ModeChip(settings.mode, Mode.START_INTERSTATE, "To interstate", vm::setMode)
         ModeChip(settings.mode, Mode.START_MILES, "First miles", vm::setMode)
         ModeChip(settings.mode, Mode.END_MILES, "Last miles", vm::setMode)
+        ModeChip(settings.mode, Mode.FULL_ROUTE, "Whole route", vm::setMode)
         ModeChip(settings.mode, Mode.ETA_ONLY, "ETA only", vm::setMode)
     }
     Text(
@@ -730,6 +731,7 @@ private fun PlacePanel(
             Mode.START_INTERSTATE -> "Google Maps guides you onto the interstate, then you're on your own."
             Mode.START_MILES -> "Google Maps guides you for the first stretch, then you're on your own."
             Mode.END_MILES -> "No guidance until you're close, then Google Maps takes you in."
+            Mode.FULL_ROUTE -> "Guidance all the way to the destination."
             Mode.ETA_ONLY -> "No directions. Just the route and a big arrival time."
         },
         style = MaterialTheme.typography.bodySmall,
@@ -737,7 +739,7 @@ private fun PlacePanel(
     when (settings.mode) {
         Mode.START_MILES -> MilesSlider("Guide me for the first", settings.startMiles, 1f..30f, vm::setStartMiles)
         Mode.END_MILES -> MilesSlider("Start guiding me within", settings.endMiles, 0.5f..10f, vm::setEndMiles)
-        Mode.START_INTERSTATE, Mode.ETA_ONLY -> {}
+        Mode.START_INTERSTATE, Mode.FULL_ROUTE, Mode.ETA_ONLY -> {}
     }
     if (settings.mode == Mode.END_MILES && watchActive) {
         Text("This replaces the trip you're already watching.", style = MaterialTheme.typography.bodySmall)

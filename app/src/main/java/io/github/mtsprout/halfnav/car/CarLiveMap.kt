@@ -371,6 +371,7 @@ class CarLiveMap(private val carContext: CarContext) : SurfaceCallback {
         panel.background = GradientDrawable().apply {
             setColor(if (dark) 0xE6202124.toInt() else 0xE6FFFFFF.toInt())
             cornerRadius = 20 * density
+            setStroke((3 * density).toInt().coerceAtLeast(2), if (dark) 0xFFF1F3F4.toInt() else 0xFF202124.toInt())
         }
         etaTime?.apply {
             setTextColor(text)

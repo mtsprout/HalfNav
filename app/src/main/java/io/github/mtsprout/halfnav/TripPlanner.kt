@@ -72,6 +72,7 @@ class TripPlanner(private val context: Context) {
         if (settings.mode == Mode.ETA_ONLY) return Outcome.EndMode(DriveTrip.etaOnly(place, r, parking), here)
         val handoff = when (settings.mode) {
             Mode.START_MILES -> RoutePlanner.pointAtDistance(r, settings.startMiles.toDouble())
+            Mode.FULL_ROUTE -> DriveTrip.wholeRouteHandoff(r)
             else -> RoutePlanner.interstateHandoff(r)
         }
         return Outcome.Ready(TripPlan(place, r, handoff, RoutePlanner.construction(r, handoff), parking), here)
