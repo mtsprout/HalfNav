@@ -325,7 +325,11 @@ private fun TripBar(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onGoogle, modifier = Modifier.weight(1f)) { Text("Google from here", maxLines = 1) }
+                if (!progress.arrived) {
+                    OutlinedButton(onClick = onGoogle, modifier = Modifier.weight(1f)) { Text("Google from here", maxLines = 1) }
+                } else {
+                    Spacer(Modifier.weight(1f))
+                }
                 Button(
                     onClick = onEnd,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD93025), contentColor = Color.White),
