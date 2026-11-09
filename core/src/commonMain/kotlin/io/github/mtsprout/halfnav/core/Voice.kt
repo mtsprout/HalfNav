@@ -130,7 +130,10 @@ class VoicePrompts {
         }
 
         if (v.arrived) {
-            if (!arrivedSpoken) out += if (v.parkingLot) "Turn into the parking lot." else "You've arrived at ${v.destinationName}."
+            // You know when you're home: no need to announce it.
+            if (!arrivedSpoken && v.destinationName != HOME_NAME) {
+                out += if (v.parkingLot) "Turn into the parking lot." else "You've arrived at ${v.destinationName}."
+            }
             arrivedSpoken = true
             wasGuided = v.guided
             return out
@@ -189,6 +192,9 @@ class VoicePrompts {
     private fun String.decapitalize() = replaceFirstChar { it.lowercase() }
 
     companion object {
+        /** The saved Home place is always named this. */
+        const val HOME_NAME = "Home"
+
         /** ~45 mph and up counts as highway driving: prompts come earlier. */
         const val HIGHWAY_MPS = 20f
         const val EARLY_HIGHWAY_M = Geo.METERS_PER_MILE
