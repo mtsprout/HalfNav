@@ -43,6 +43,13 @@ class VoiceTest {
         assertEquals("12 miles", SpokenText.distance(19500.0))
     }
 
+    @Test
+    fun arrivingHomeIsNotAnnounced() {
+        val v = VoicePrompts()
+        v.update(input(destinationName = "Home"))
+        assertEquals(emptyList(), v.update(input(destinationName = "Home", arrived = true)))
+    }
+
     private val turn = Instruction(40, listOf("I-35 S"), null, "TURN_RIGHT", "Turn right onto S Interstate 35/I-35 Bus S")
     private val merge = Instruction(90, listOf("I-35 S"), null, "ENTER_FREEWAY", "Take the I-35 S freeway")
 
@@ -57,11 +64,12 @@ class VoiceTest {
         rerouting: Boolean = false,
         routeVersion: Int = 0,
         parkingLot: Boolean = false,
+        destinationName: String = "the Alamo",
     ) = VoiceInput(
         guided = guided, next = next, metersToNext = metersToNext, speedMps = speed,
         warningKey = warningKey, warningWhat = warningKey?.let { "Road work" }, warningRoad = "I-35 S",
         metersToWarning = metersToWarning, rerouting = rerouting, arrived = arrived,
-        destinationName = "the Alamo",
+        destinationName = destinationName,
         guidanceStarts = "Starting guidance to I 35.",
         guidanceEnds = "You're on I 35. Guidance ends here. You're on your own.",
         routeVersion = routeVersion,
